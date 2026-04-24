@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmergencyOS — ER Receiving Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .er-header { background: linear-gradient(135deg, #1a1025, #111827); border-bottom: 2px solid var(--accent-purple); }
+    .er-header .header-logo { color: var(--accent-purple); }
+    .er-board { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .er-patient-detail { position: sticky; top: 20px; max-height: calc(100vh - 80px); overflow-y: auto; }
+    .ecg-preview { background: #080c12; border: 1px solid #1a2a3a; border-radius: 8px; padding: 8px; }
+    .ecg-preview canvas { width: 100%; height: 80px; }
+    .bed-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.82rem; }
+    .bed-badge.trauma { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+    .bed-badge.cardiac { background: rgba(236,72,153,0.15); color: var(--accent-pink); border: 1px solid rgba(236,72,153,0.3); }
+    .bed-badge.standard { background: rgba(59,130,246,0.15); color: var(--accent-blue); border: 1px solid rgba(59,130,246,0.3); }
+    .accept-btn { padding: 12px 28px; font-size: 1rem; font-weight: 700; border-radius: 10px; border: none; cursor: pointer; transition: all 0.2s; }
+    .accept-btn.primary { background: var(--accent-green); color: #fff; }
+    .accept-btn.primary:hover { background: #059669; transform: scale(1.02); }
+    .vitals-mini { display: flex; gap: 10px; flex-wrap: wrap; }
+    .vitals-mini .vm { text-align: center; padding: 6px 10px; background: var(--bg-primary); border-radius: 6px; min-width: 60px; }
+    .vitals-mini .vm .vm-val { font-family: var(--font-mono); font-weight: 700; font-size: 1rem; }
+    .vitals-mini .vm .vm-lbl { font-size: 0.6rem; text-transform: uppercase; color: var(--text-muted); }
+    .trend-arrow { font-size: 0.75rem; }
+    .trend-up { color: var(--accent-red); }
+    .trend-down { color: var(--accent-green); }
+    .trend-stable { color: var(--text-muted); }
+  </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+<div class="app-layout" style="grid-template-columns: 260px 1fr;">
+
+  <!-- HEADER -->
+  <header class="header er-header">
+    <div class="header-left">
+      <div class="header-logo">🏥 EmergencyOS — ER Dashboard</div>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat"><div class="stat-value" style="color:var(--accent-red)">3</div><div class="stat-label">Inbound</div></div>
+      <div class="header-stat"><div class="stat-value">18</div><div class="stat-label">ED Census</div></div>
+      <div class="header-stat"><div class="stat-value">4</div><div class="stat-label">Beds Open</div></div>
+      <div class="header-stat"><div class="stat-value" style="color:var(--accent-green)">2</div><div class="stat-label">Discharges Pending</div></div>
+    </div>
+    <div class="header-right">
+      <span class="header-clock" id="er-clock">17:05:33</span>
+      <button class="header-icon-btn">🔔<span class="badge">5</span></button>
+      <div class="header-user">
+        <div class="avatar" style="background:var(--accent-purple)">SK</div>
+        <div class="user-info">
+          <div class="user-name">Dr. Sarah Kim</div>
+          <div class="user-role">Interventional Cardiology</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">ER Overview</div>
+      <div class="sidebar-item active"><span class="icon">📋</span> Inbound Patients <span class="badge-sm badge-red">3</span></div>
+      <div class="sidebar-item"><span class="icon">🛏️</span> Bed Board</div>
+      <div class="sidebar-item"><span class="icon">⏱️</span> Wait Times</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Activations</div>
+      <div class="sidebar-item"><span class="icon">❤️</span> STEMI Alerts <span class="badge-sm badge-red">1</span></div>
+      <div class="sidebar-item"><span class="icon">🧠</span> Stroke Alerts <span class="badge-sm badge-orange">0</span></div>
+      <div class="sidebar-item"><span class="icon">🩹</span> Trauma Alerts <span class="badge-sm badge-orange">0</span></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Integration</div>
+      <div class="sidebar-item"><span class="icon">📡</span> FHIR Inbox <span class="badge-sm badge-green">14</span></div>
+      <div class="sidebar-item"><span class="icon">🔗</span> EMS Connections <span class="badge-sm badge-green">3</span></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Cath Lab</div>
+      <div class="sidebar-item"><span class="icon">🫀</span> Cath Lab Status <span class="badge-sm badge-red">ACTIVE</span></div>
+      <div class="sidebar-item"><span class="icon">👥</span> Team Roster</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- Active STEMI Banner -->
+    <div class="alert-banner alert-red" style="font-size:1rem;">
+      🚨 <strong>STEMI ACTIVATION — CATH LAB TEAM CALLED</strong> — Medic 2 inbound with 67M Inferior STEMI · ETA 4 min · Cath Lab Ready in 2 min
+    </div>
+
+    <div class="er-board">
+      <!-- LEFT: Inbound Patient List -->
+      <div>
+        <h2 style="margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+          🚑 Inbound EMS Patients
+          <span class="tag tag-red">3 INCOMING</span>
+        </h2>
+
+        <!-- Patient 1: STEMI -->
+        <div class="er-inbound-card priority-critical" style="border-width:2px;background:rgba(239,68,68,0.03);" id="patient-1">
+          <div class="inbound-header">
+            <div>
+              <span class="tag tag-red" style="font-size:0.85rem;">❤ STEMI — INFERIOR</span>
+              <span class="bed-badge cardiac" style="margin-left:8px;">🫀 Cath Lab</span>
+            </div>
+            <div class="inbound-eta">ETA 4:22</div>
+          </div>
+          <div style="margin:8px 0;">
+            <strong style="font-size:1.05rem;">Robert Mitchell</strong>
+            <span style="color:var(--text-secondary);margin-left:8px;">67M · Medic 2 · PM Thompson, NRP</span>
+          </div>
+          <div class="inbound-details">Crushing substernal chest pain → L arm/jaw · Onset 45 min · Pain 7/10 · PMHx: HTN, HLD, DM2 · Allergy: PCN</div>
+          
+          <div class="vitals-mini" style="margin-top:10px;">
+            <div class="vm"><div class="vm-val" style="color:var(--accent-red)">112</div><div class="vm-lbl">HR <span class="trend-arrow trend-up">↑</span></div></div>
+            <div class="vm"><div class="vm-val" style="color:var(--accent-yellow)">88/54</div><div class="vm-lbl">BP <span class="trend-arrow trend-down">↓</span></div></div>
+            <div class="vm"><div class="vm-val">94%</div><div class="vm-lbl">SPO2 <span class="trend-arrow trend-stable">→</span></div></div>
+            <div class="vm"><div class="vm-val">38</div><div class="vm-lbl">ETCO2</div></div>
+            <div class="vm"><div class="vm-val">22</div><div class="vm-lbl">RR</div></div>
+            <div class="vm"><div class="vm-val">15</div><div class="vm-lbl">GCS</div></div>
+          </div>
+
+          <div class="inbound-alerts" style="margin-top:10px;">
+            <span class="tag tag-red">STEMI Alert</span>
+            <span class="tag tag-red">V4R Positive (RV)</span>
+            <span class="tag tag-orange">Hypotensive</span>
+            <span class="tag tag-green">12-Lead Received ✓</span>
+            <span class="tag tag-green">ASA Given ✓</span>
+            <span class="tag tag-blue">NS Bolus Running</span>
+          </div>
+
+          <div style="margin-top:12px;padding:10px;background:var(--bg-primary);border-radius:8px;">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;">PREHOSPITAL INTERVENTIONS</div>
+            <div style="display:flex;gap:16px;font-size:0.82rem;">
+              <span>💊 ASA 324mg PO (14:24)</span>
+              <span>💊 NTG 0.4mg SL (14:25) — held, RV+</span>
+              <span>💉 IV 18ga L AC, NS TKO</span>
+              <span>💧 NS 500mL bolus (14:30)</span>
+            </div>
+          </div>
+
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <button class="accept-btn primary">✅ Accept Patient — Cath Lab</button>
+            <button class="btn btn-outline">📋 View Full ePCR</button>
+            <button class="btn btn-outline">📊 View 12-Lead</button>
+          </div>
+        </div>
+
+        <!-- Patient 2: Asthma -->
+        <div class="er-inbound-card priority-emergent" style="margin-top:12px;">
+          <div class="inbound-header">
+            <div>
+              <span class="tag tag-orange">🫁 RESPIRATORY DISTRESS</span>
+              <span class="bed-badge standard" style="margin-left:8px;">Bay 4</span>
+            </div>
+            <div class="inbound-eta">ETA 11:30</div>
+          </div>
+          <div style="margin:6px 0;">
+            <strong>Maria Garcia</strong>
+            <span style="color:var(--text-secondary);margin-left:8px;">34F · Medic 1 · PM Rodriguez</span>
+          </div>
+          <div class="inbound-details">Acute asthma exacerbation · Diffuse wheezing · Speaking in 2-3 word sentences · Albuterol x3 prehospital</div>
+          <div class="vitals-mini" style="margin-top:8px;">
+            <div class="vm"><div class="vm-val" style="color:var(--accent-yellow)">128</div><div class="vm-lbl">HR</div></div>
+            <div class="vm"><div class="vm-val">142/88</div><div class="vm-lbl">BP</div></div>
+            <div class="vm"><div class="vm-val" style="color:var(--accent-yellow)">88%</div><div class="vm-lbl">SPO2</div></div>
+            <div class="vm"><div class="vm-val">32</div><div class="vm-lbl">RR</div></div>
+          </div>
+          <div class="inbound-alerts" style="margin-top:8px;">
+            <span class="tag tag-orange">Refractory to albuterol</span>
+            <span class="tag tag-green">IV Access ✓</span>
+          </div>
+          <div style="margin-top:10px;">
+            <button class="btn btn-success btn-sm">✅ Accept Patient</button>
+            <button class="btn btn-outline btn-sm">📋 View ePCR</button>
+          </div>
+        </div>
+
+        <!-- Patient 3: Fall -->
+        <div class="er-inbound-card priority-urgent" style="margin-top:12px;">
+          <div class="inbound-header">
+            <div>
+              <span class="tag tag-yellow">🦴 FALL / HIP INJURY</span>
+              <span class="bed-badge standard" style="margin-left:8px;">Bay 7</span>
+            </div>
+            <div class="inbound-eta">ETA 18:45</div>
+          </div>
+          <div style="margin:6px 0;">
+            <strong>Dorothy Williams</strong>
+            <span style="color:var(--text-secondary);margin-left:8px;">82F · Medic 3 · EMT-A Chen</span>
+          </div>
+          <div class="inbound-details">Ground-level fall at home · R hip pain · Unable to bear weight · No LOC · On warfarin</div>
+          <div class="vitals-mini" style="margin-top:8px;">
+            <div class="vm"><div class="vm-val">88</div><div class="vm-lbl">HR</div></div>
+            <div class="vm"><div class="vm-val">158/92</div><div class="vm-lbl">BP</div></div>
+            <div class="vm"><div class="vm-val">97%</div><div class="vm-lbl">SPO2</div></div>
+            <div class="vm"><div class="vm-val">16</div><div class="vm-lbl">RR</div></div>
+          </div>
+          <div class="inbound-alerts" style="margin-top:8px;">
+            <span class="tag tag-orange">On Warfarin</span>
+            <span class="tag tag-blue">Pain managed — Fentanyl 50mcg</span>
+          </div>
+          <div style="margin-top:10px;">
+            <button class="btn btn-success btn-sm">✅ Accept Patient</button>
+            <button class="btn btn-outline btn-sm">📋 View ePCR</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Selected Patient Detail + 12-Lead -->
+      <div class="er-patient-detail">
+        <h2 style="margin-bottom:12px;">📊 Patient Detail — Robert Mitchell</h2>
+        
+        <!-- 12-Lead ECG Viewer -->
+        <div class="card" style="background:#080c12;border-color:#1a2a3a;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div>
+              <strong>12-Lead ECG</strong>
+              <span class="tag tag-red" style="margin-left:8px;">STEMI — INFERIOR</span>
+            </div>
+            <span style="font-size:0.78rem;color:var(--text-muted);font-family:var(--font-mono);">Acquired: 14:27:15 · Transmitted: 14:27:22</span>
+          </div>
+
+          <div class="twelve-lead-grid" id="er-12lead">
+            <div class="lead-cell"><span class="lead-label">I</span><canvas class="er-lead" data-lead="I"></canvas></div>
+            <div class="lead-cell"><span class="lead-label">aVR</span><canvas class="er-lead" data-lead="aVR"></canvas></div>
+            <div class="lead-cell"><span class="lead-label">V1</span><canvas class="er-lead" data-lead="V1"></canvas></div>
+            <div class="lead-cell"><span class="lead-label">V4</span><canvas class="er-lead" data-lead="V4"></canvas></div>
+            <div class="lead-cell stemi"><span class="lead-label">II ▲</span><canvas class="er-lead" data-lead="II"></canvas></div>
+            <div class="lead-cell"><span class="lead-label">aVL</span><canvas class="er-lead" data-lead="aVL"></canvas></div>
+            <div class="lead-cell"><span class="lead-label">V2</span><canvas class="er-lead" data-lead="V2"></canvas></div>
+            <div class="lead-cell"><span class="lead-label">V5</span><canvas class="er-lead" data-lead="V5"></canvas></div>
+            <div class="lead-cell stemi"><span class="lead-label">III ▲</span><canvas class="er-lead" data-lead="III"></canvas></div>
+            <div class="lead-cell stemi"><span class="lead-label">aVF ▲</span><canvas class="er-lead" data-lead="aVF"></canvas></div>
+            <div class="lead-cell"><span class="lead-label">V3</span><canvas class="er-lead" data-lead="V3"></canvas></div>
+            <div class="lead-cell"><span class="lead-label">V6</span><canvas class="er-lead" data-lead="V6"></canvas></div>
+          </div>
+
+          <div style="padding:8px 0;font-size:0.78rem;color:var(--text-muted);">
+            <strong style="color:var(--accent-red);">Machine Interpretation:</strong> Acute inferior STEMI. ST elevation leads II (4mm), III (3mm), aVF (5mm). Reciprocal depression I, aVL. Sinus tachycardia 112 BPM.
+          </div>
+        </div>
+
+        <!-- FHIR Data Received -->
+        <div class="card" style="margin-top:12px;">
+          <div class="card-header">
+            <div class="card-title">📥 FHIR Data Received from EMS</div>
+            <span class="tag tag-green">14 Resources</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="tag tag-green">✓ Patient</span>
+            <span class="tag tag-green">✓ Encounter</span>
+            <span class="tag tag-green">✓ Condition (STEMI)</span>
+            <span class="tag tag-green">✓ Observations x6</span>
+            <span class="tag tag-green">✓ DiagnosticReport</span>
+            <span class="tag tag-green">✓ Binary (ECG)</span>
+            <span class="tag tag-green">✓ MedAdmin x2</span>
+            <span class="tag tag-green">✓ Flag (STEMI)</span>
+            <span class="tag tag-yellow">⏳ Task (Transfer)</span>
+          </div>
+          <div style="margin-top:10px;padding:8px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:0.82rem;">
+            ✅ All data auto-filed to Epic chart — <strong>MRN: MEM-2847291</strong> · Existing patient matched via Patient.$match (DOB + Name + Address)
+          </div>
+        </div>
+
+        <!-- Vitals Trend -->
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">📈 Prehospital Vitals Trend</div>
+          <table class="data-table" style="margin-top:8px;">
+            <thead><tr><th>Time</th><th>HR</th><th>BP</th><th>SPO2</th><th>ETCO2</th><th>RR</th><th>Pain</th></tr></thead>
+            <tbody>
+              <tr><td style="font-family:var(--font-mono)">14:30</td><td style="color:var(--accent-red)">112 ↑</td><td style="color:var(--accent-yellow)">88/54 ↓</td><td>94%</td><td>38</td><td>22</td><td>7/10</td></tr>
+              <tr><td style="font-family:var(--font-mono)">14:26</td><td>108</td><td>92/58</td><td>95%</td><td>40</td><td>20</td><td>8/10</td></tr>
+              <tr><td style="font-family:var(--font-mono)">14:22</td><td>102</td><td>102/68</td><td>96%</td><td>42</td><td>18</td><td>9/10</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:8px;font-size:0.78rem;color:var(--accent-yellow);">
+            ⚠️ Trend: HR increasing, BP decreasing — consistent with cardiogenic shock / RV failure
+          </div>
+        </div>
+
+        <!-- Handoff Actions -->
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">🤝 Care Transfer Actions</div>
+          <div style="margin-top:12px;">
+            <div class="signature-box" style="margin-bottom:12px;">
+              <div style="font-size:1.5rem;">✍️</div>
+              <div class="sig-label">Sign to Accept Care Transfer</div>
+              <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Your Epic credentials will be used for digital signature</div>
+            </div>
+            <button class="accept-btn primary" style="width:100%;font-size:1.1rem;">
+              ✅ Accept Care Transfer — Route to Cath Lab
+            </button>
+            <div style="text-align:center;margin-top:6px;font-size:0.75rem;color:var(--text-muted);">
+              This will update the FHIR Task to "completed" and notify the EMS crew
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// Clock
+function updateClock() {
+  document.getElementById('er-clock').textContent = new Date().toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Draw 12-Lead
+function drawERLeads() {
+  const stemiLeads = ['II', 'III', 'aVF'];
+  document.querySelectorAll('.er-lead').forEach(canvas => {
+    const lead = canvas.dataset.lead;
+    const isStemi = stemiLeads.includes(lead);
+    canvas.width = canvas.offsetWidth;
+    canvas.height = 50;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#080c12';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = isStemi ? '#ef4444' : '#00ff88';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const mid = 25;
+    for (let x = 0; x < canvas.width; x++) {
+      const cyclePos = (x % (canvas.width / 3)) / (canvas.width / 3);
+      let y = mid;
+      if (cyclePos > 0.2 && cyclePos < 0.22) y = mid + 3;
+      else if (cyclePos > 0.22 && cyclePos < 0.24) y = mid - 20;
+      else if (cyclePos > 0.24 && cyclePos < 0.26) y = mid + 8;
+      else if (isStemi && cyclePos > 0.3 && cyclePos < 0.42) y = mid - 10;
+      else if (!isStemi && cyclePos > 0.3 && cyclePos < 0.38) y = mid - 4;
+      else y += Math.sin(x * 0.3) * 1;
+      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+}
+
+window.addEventListener('load', () => setTimeout(drawERLeads, 100));
+window.addEventListener('resize', drawERLeads);
+</script>
+</body>
+</html>

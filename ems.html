@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmergencyOS — EMS Operations</title>
+  <link rel="stylesheet" href="styles.css">
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">🚑 EmergencyOS</div>
+      <div class="mode-switcher">
+        <button class="mode-btn active-fire" onclick="window.location='index.html'">🔥 Fire</button>
+        <button class="mode-btn active-ems active">🚑 EMS</button>
+        <button class="mode-btn" onclick="window.location='index.html'">⭐ Command</button>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat"><div class="stat-value">2</div><div class="stat-label">Active Pts</div></div>
+      <div class="header-stat"><div class="stat-value">1</div><div class="stat-label">Transporting</div></div>
+      <div class="header-stat"><div class="stat-value">4</div><div class="stat-label">EMS Available</div></div>
+      <div class="header-stat"><div class="stat-value">12</div><div class="stat-label">Shift Runs</div></div>
+    </div>
+    <div class="header-right">
+      <span class="header-clock" id="clock">17:05:33</span>
+      <button class="header-icon-btn">🔔<span class="badge">3</span></button>
+      <button class="header-icon-btn">📡</button>
+      <div class="header-user">
+        <div class="avatar">PM</div>
+        <div class="user-info">
+          <div class="user-name">PM Thompson</div>
+          <div class="user-role">Paramedic · Medic 2</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">EMS Operations</div>
+      <div class="sidebar-item active" onclick="showPage('dashboard')">
+        <span class="icon">📊</span> EMS Dashboard
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Current Patient — ePCR</div>
+      <div class="sidebar-item" onclick="showPage('runinfo')">
+        <span class="icon">📋</span> Run Info <span class="status-dot dot-green"></span>
+      </div>
+      <div class="sidebar-item" onclick="showPage('idscanner')">
+        <span class="icon">📷</span> ID Scanner / OCR
+      </div>
+      <div class="sidebar-item" onclick="showPage('demographics')">
+        <span class="icon">👤</span> Demographics <span class="status-dot dot-green"></span>
+      </div>
+      <div class="sidebar-item" onclick="showPage('bls')">
+        <span class="icon">🩺</span> BLS Assessment <span class="badge-sm badge-orange">70%</span>
+      </div>
+      <div class="sidebar-item" onclick="showPage('als')">
+        <span class="icon">💉</span> ALS Assessment <span class="badge-sm badge-orange">45%</span>
+      </div>
+      <div class="sidebar-item" onclick="showPage('vitals')">
+        <span class="icon">💓</span> Vitals / Monitor <span class="status-dot dot-green"></span>
+      </div>
+      <div class="sidebar-item" onclick="showPage('medications')">
+        <span class="icon">💊</span> Medications
+      </div>
+      <div class="sidebar-item" onclick="showPage('narrative')">
+        <span class="icon">📝</span> Narrative
+      </div>
+      <div class="sidebar-item" onclick="showPage('disposition')">
+        <span class="icon">🏥</span> Disposition
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Hospital Integration</div>
+      <div class="sidebar-item" onclick="showPage('handoff')">
+        <span class="icon">🤝</span> Hospital Handoff <span class="badge-sm badge-blue">NEW</span>
+      </div>
+      <div class="sidebar-item" onclick="showPage('emr')">
+        <span class="icon">🔗</span> EMR Connection <span class="status-dot dot-green"></span>
+      </div>
+      <div class="sidebar-item" onclick="showPage('fhir')">
+        <span class="icon">📤</span> FHIR Transmissions <span class="badge-sm badge-green">14</span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Tools</div>
+      <div class="sidebar-item" onclick="showPage('zoll')">
+        <span class="icon">📡</span> Zoll Monitor Link <span class="status-dot dot-green"></span>
+      </div>
+      <div class="sidebar-item" onclick="showPage('ai')">
+        <span class="icon">🧠</span> AI Clinical Support
+      </div>
+      <div class="sidebar-item" onclick="showPage('comms')">
+        <span class="icon">💬</span> Comms / Handoff <span class="badge-sm badge-red">2</span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">EMS Units</div>
+      <div class="sidebar-units">
+        <div class="sidebar-unit"><span class="unit-id">M-2</span><span class="unit-status transport">TRANSPORT</span></div>
+        <div class="sidebar-unit"><span class="unit-id">M-1</span><span class="unit-status on-scene">ON SCENE</span></div>
+        <div class="sidebar-unit"><span class="unit-id">M-3</span><span class="unit-status enroute">ENROUTE</span></div>
+        <div class="sidebar-unit"><span class="unit-id">M-4</span><span class="unit-status available">AVAILABLE</span></div>
+        <div class="sidebar-unit"><span class="unit-id">M-5</span><span class="unit-status available">AVAILABLE</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- ==================== DASHBOARD ==================== -->
+    <div id="page-dashboard" class="page-content">
+      <!-- Active Call Banner -->
+      <div class="call-banner">
+        <div class="call-info">
+          <span class="call-type" style="background:var(--accent-red);color:#fff;">❤ CHEST PAIN</span>
+          <div class="call-details">
+            <h3>1200 Oak Street, Apt 4B — INC-2024-0848</h3>
+            <p>67yo Male · Priority 1 · Medic 2 Transporting → Memorial Hospital</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div class="call-timer" id="call-timer">00:12:30</div>
+          <button class="btn btn-primary">Open ePCR ➜</button>
+        </div>
+      </div>
+
+      <!-- ePCR Progress Steps -->
+      <div class="epcr-steps">
+        <div class="epcr-step complete">📋 Run Info ✓</div>
+        <div class="epcr-step complete">📷 Patient ID ✓</div>
+        <div class="epcr-step complete">👤 Demographics ✓</div>
+        <div class="epcr-step current">🩺 BLS Assessment</div>
+        <div class="epcr-step">💉 ALS Assessment</div>
+        <div class="epcr-step complete">💓 Vitals ✓</div>
+        <div class="epcr-step">💊 Medications</div>
+        <div class="epcr-step">📝 Narrative</div>
+        <div class="epcr-step">🏥 Disposition</div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid-4" style="margin-bottom:16px;">
+        <div class="kpi-card">
+          <div class="kpi-icon">🚑</div>
+          <div class="kpi-value">12</div>
+          <div class="kpi-label">Shift Runs</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">⏱️</div>
+          <div class="kpi-value">18:32</div>
+          <div class="kpi-label">Avg On-Scene Time</div>
+          <div class="kpi-change positive">↓ -1:10</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">📋</div>
+          <div class="kpi-value">92%</div>
+          <div class="kpi-label">ePCR Completion</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🧠</div>
+          <div class="kpi-value">100%</div>
+          <div class="kpi-label">Protocol Compliance</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Pending Documentation -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📋 Pending Documentation</div>
+          </div>
+          <div class="er-inbound-card priority-critical" style="cursor:default">
+            <div class="inbound-header">
+              <strong>Mitchell, Robert — INC-0848</strong>
+              <span class="tag tag-orange">65% complete</span>
+            </div>
+            <div class="inbound-details">67M · Chest Pain / STEMI · Active Transport</div>
+            <div class="progress-bar mt-1"><div class="progress-fill orange" style="width:65%"></div></div>
+          </div>
+          <div class="er-inbound-card priority-emergent" style="cursor:default">
+            <div class="inbound-header">
+              <strong>Garcia, Maria — INC-0844</strong>
+              <span class="tag tag-green">90% complete</span>
+            </div>
+            <div class="inbound-details">34F · Asthma Exacerbation · Transported 10:02</div>
+            <div class="progress-bar mt-1"><div class="progress-fill green" style="width:90%"></div></div>
+          </div>
+        </div>
+        <!-- Zoll Quick View -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📡 Zoll Monitor — Quick View</div>
+            <span class="tag tag-green">● CONNECTED</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+            <div class="vital-box critical"><div class="vital-label">HR</div><div class="vital-value" id="qv-hr">112</div><div class="vital-unit">BPM</div></div>
+            <div class="vital-box warning"><div class="vital-label">BP</div><div class="vital-value">88/54</div><div class="vital-unit">mmHg</div></div>
+            <div class="vital-box warning"><div class="vital-label">SPO2</div><div class="vital-value">94</div><div class="vital-unit">%</div></div>
+            <div class="vital-box normal"><div class="vital-label">ETCO2</div><div class="vital-value">38</div><div class="vital-unit">mmHg</div></div>
+          </div>
+          <div style="margin-top:12px;text-align:right;">
+            <button class="btn btn-outline btn-sm" onclick="showPage('zoll')">Open Full Monitor ➜</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hospital EMR Status -->
+      <div class="card mt-2">
+        <div class="card-header">
+          <div class="card-title">🏥 Hospital EMR Connections</div>
+          <button class="btn btn-outline btn-sm" onclick="showPage('emr')">Manage ➜</button>
+        </div>
+        <div class="grid-3">
+          <div class="emr-connection connected">
+            <span class="emr-logo">🏥</span>
+            <div><div class="emr-name">Memorial Hospital — Epic</div><div class="emr-latency">FHIR R4 · 42ms</div></div>
+            <span class="emr-status">● Connected</span>
+          </div>
+          <div class="emr-connection connected">
+            <span class="emr-logo">🏥</span>
+            <div><div class="emr-name">St. Mary's — Athena</div><div class="emr-latency">FHIR R4 · 68ms</div></div>
+            <span class="emr-status">● Connected</span>
+          </div>
+          <div class="emr-connection disconnected">
+            <span class="emr-logo">🏥</span>
+            <div><div class="emr-name">County General — Cerner</div><div class="emr-latency">HL7v2 · Offline</div></div>
+            <span class="emr-status">● Offline</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== BLS ASSESSMENT ==================== -->
+    <div id="page-bls" class="page-content hidden">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🩺 BLS Assessment</div>
+          <div class="page-subtitle">Patient: Mitchell, Robert — 67M — Chest Pain · INC-0848</div>
+        </div>
+        <button class="btn btn-primary" onclick="showPage('als')">Continue to ALS ➜</button>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span class="text-sm">BLS Assessment Progress</span>
+          <span class="text-sm" style="color:var(--accent-cyan)">14/20 Questions</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill green" style="width:70%"></div></div>
+      </div>
+
+      <div class="grid-3-1">
+        <div>
+          <!-- Scene Size-Up -->
+          <div class="assessment-section-header">🔍 SCENE SIZE-UP</div>
+          <div class="question-card answered" data-q="scene1">
+            <div class="question-label">SCENE — QUESTION 1</div>
+            <div class="question-text">Is the scene safe?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">✅ Yes</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">❌ No</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Made Safe</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'info')">🔄 Reassessing</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card answered" data-q="scene2">
+            <div class="question-label">SCENE — QUESTION 2</div>
+            <div class="question-text">BSI/PPE precautions in place?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn" onclick="selectAnswer(this,'normal')">✅ Standard</button>
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">🧤 Gloves + Mask</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">🦺 Full PPE</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">⚠️ Hazmat Level</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card answered" data-q="scene3">
+            <div class="question-label">SCENE — QUESTION 3</div>
+            <div class="question-text">Number of patients?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-info" onclick="selectAnswer(this,'info')">1️⃣ One</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'info')">2️⃣ Two</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'info')">3️⃣ Three</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">🔢 Multiple (MCI)</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card answered" data-q="scene4">
+            <div class="question-label">SCENE — QUESTION 4</div>
+            <div class="question-text">Mechanism of injury / Nature of illness?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn" onclick="selectAnswer(this,'info')">🤕 Trauma</button>
+              <button class="answer-btn selected-info" onclick="selectAnswer(this,'info')">🤒 Medical</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">❓ Unknown</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <!-- Level of Consciousness -->
+          <div class="assessment-section-header">🧠 LEVEL OF CONSCIOUSNESS</div>
+          <div class="question-card answered" data-q="loc1">
+            <div class="question-label">LOC — QUESTION 5</div>
+            <div class="question-text">Level of consciousness (AVPU)?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">🟢 Alert</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">🟡 Verbal</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">🟠 Pain</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">🔴 Unresponsive</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card answered" data-q="loc2">
+            <div class="question-label">LOC — QUESTION 6</div>
+            <div class="question-text">If Alert — orientation level?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">✅ A&Ox4 (Person, Place, Time, Event)</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ A&Ox3</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ A&Ox2</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">⚠️ A&Ox1</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <!-- Airway -->
+          <div class="assessment-section-header">💨 AIRWAY ASSESSMENT</div>
+          <div class="question-card answered" data-q="air1">
+            <div class="question-label">AIRWAY — QUESTION 7</div>
+            <div class="question-text">Airway status?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">✅ Patent</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Partially Obstructed</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">🔴 Completely Obstructed</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">🔴 Not Maintainable</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card answered" data-q="air2">
+            <div class="question-label">AIRWAY — QUESTION 8</div>
+            <div class="question-text">Airway sounds?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">✅ Clear</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Snoring</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Gurgling</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Stridor</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Wheezing</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <!-- Breathing -->
+          <div class="assessment-section-header">🫁 BREATHING ASSESSMENT</div>
+          <div class="question-card answered" data-q="br1">
+            <div class="question-label">BREATHING — QUESTION 9</div>
+            <div class="question-text">Is the patient breathing?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">✅ Yes — Adequate</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Yes — Inadequate</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">🔴 No — Apneic</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card caution" data-q="br2">
+            <div class="question-label">BREATHING — QUESTION 10</div>
+            <div class="question-text">Respiratory effort?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn" onclick="selectAnswer(this,'normal')">✅ Normal</button>
+              <button class="answer-btn selected-caution" onclick="selectAnswer(this,'caution')">⚠️ Labored</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Shallow</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">🔴 Agonal</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card answered" data-q="br3">
+            <div class="question-label">BREATHING — QUESTION 11</div>
+            <div class="question-text">Breath sounds equal bilaterally?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">✅ Yes — Clear bilaterally</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">❌ No — describe</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <!-- Circulation -->
+          <div class="assessment-section-header">❤️ CIRCULATION ASSESSMENT</div>
+          <div class="question-card answered" data-q="circ1">
+            <div class="question-label">CIRCULATION — QUESTION 12</div>
+            <div class="question-text">Pulse present?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">✅ Yes — Radial</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">✅ Yes — Carotid only</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">🔴 No pulse</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card abnormal" data-q="circ2">
+            <div class="question-label">CIRCULATION — QUESTION 13</div>
+            <div class="question-text">Skin condition?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn" onclick="selectAnswer(this,'normal')">✅ Warm / Dry / Normal</button>
+              <button class="answer-btn selected-abnormal" onclick="selectAnswer(this,'abnormal')">🔴 Pale / Cool / Diaphoretic</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Flushed / Hot</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">🔴 Cyanotic</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card answered" data-q="circ3">
+            <div class="question-label">CIRCULATION — QUESTION 14</div>
+            <div class="question-text">Major external bleeding?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal" onclick="selectAnswer(this,'normal')">✅ None</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'caution')">⚠️ Minor — Controlled</button>
+              <button class="answer-btn" onclick="selectAnswer(this,'abnormal')">🔴 Major — Uncontrolled</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+        </div>
+
+        <!-- BLS Summary Panel -->
+        <div>
+          <div class="summary-panel">
+            <h3>📋 BLS Summary</h3>
+            <div class="summary-section-title">Scene Size-Up</div>
+            <div class="summary-row"><span class="summary-label">Scene Safe</span><span class="summary-value tag tag-green">Yes</span></div>
+            <div class="summary-row"><span class="summary-label">BSI/PPE</span><span class="summary-value tag tag-green">Gloves+Mask</span></div>
+            <div class="summary-row"><span class="summary-label"># Patients</span><span class="summary-value">1</span></div>
+            <div class="summary-row"><span class="summary-label">MOI/NOI</span><span class="summary-value">Medical</span></div>
+            <div class="summary-section-title">Level of Consciousness</div>
+            <div class="summary-row"><span class="summary-label">AVPU</span><span class="summary-value tag tag-green">Alert</span></div>
+            <div class="summary-row"><span class="summary-label">Orientation</span><span class="summary-value tag tag-green">A&Ox4</span></div>
+            <div class="summary-section-title">Airway</div>
+            <div class="summary-row"><span class="summary-label">Status</span><span class="summary-value tag tag-green">Patent</span></div>
+            <div class="summary-row"><span class="summary-label">Sounds</span><span class="summary-value tag tag-green">Clear</span></div>
+            <div class="summary-section-title">Breathing</div>
+            <div class="summary-row"><span class="summary-label">Breathing</span><span class="summary-value tag tag-green">Adequate</span></div>
+            <div class="summary-row"><span class="summary-label">Effort</span><span class="summary-value tag tag-orange">Labored ⚠</span></div>
+            <div class="summary-row"><span class="summary-label">B/L Equal</span><span class="summary-value tag tag-green">Yes</span></div>
+            <div class="summary-section-title">Circulation</div>
+            <div class="summary-row"><span class="summary-label">Pulse</span><span class="summary-value tag tag-green">Radial</span></div>
+            <div class="summary-row"><span class="summary-label">Skin</span><span class="summary-value tag tag-red">Pale/Cool/Diaph 🚨</span></div>
+            <div class="summary-row"><span class="summary-label">Bleeding</span><span class="summary-value tag tag-green">None</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ALS ASSESSMENT ==================== -->
+    <div id="page-als" class="page-content hidden">
+      <div class="page-header">
+        <div>
+          <div class="page-title">💉 ALS Assessment</div>
+          <div class="page-subtitle">Patient: Mitchell, Robert — 67M — Chest Pain / STEMI · INC-0848</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span class="text-sm">ALS Assessment Progress</span>
+          <span class="text-sm" style="color:var(--accent-cyan)">6/14 Questions</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill green" style="width:43%"></div></div>
+      </div>
+
+      <div class="grid-3-1">
+        <div>
+          <div class="assessment-section-header">🫀 CARDIAC ASSESSMENT — 12-LEAD & RHYTHM</div>
+
+          <div class="question-card answered">
+            <div class="question-label">CARDIAC — A1</div>
+            <div class="question-text">Cardiac monitor applied?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal">✅ Yes — Zoll Linked</button>
+              <button class="answer-btn">✅ Yes — Manual</button>
+              <button class="answer-btn">❌ No</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card caution">
+            <div class="question-label">CARDIAC — A2</div>
+            <div class="question-text">Initial cardiac rhythm?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn">NSR</button>
+              <button class="answer-btn selected-caution">Sinus Tach</button>
+              <button class="answer-btn">Sinus Brady</button>
+              <button class="answer-btn">A-Fib</button>
+              <button class="answer-btn">V-Tach</button>
+              <button class="answer-btn">V-Fib</button>
+              <button class="answer-btn">SVT</button>
+              <button class="answer-btn">Other</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+            <textarea class="notes-field" placeholder="Clinical notes...">Sinus tachycardia at 112 BPM. ST elevation noted in leads II, III, aVF.</textarea>
+          </div>
+
+          <div class="question-card abnormal">
+            <div class="question-label">CARDIAC — A3</div>
+            <div class="question-text">12-Lead ECG interpretation?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn">✅ Normal Sinus</button>
+              <button class="answer-btn">⚠️ ST Depression</button>
+              <button class="answer-btn selected-abnormal">🔴 ST Elevation (STEMI)</button>
+              <button class="answer-btn">⚠️ Bundle Branch Block</button>
+              <button class="answer-btn">⚠️ Other acute changes</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card abnormal">
+            <div class="question-label">CARDIAC — A4</div>
+            <div class="question-text">If STEMI — which territory?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn">🔴 Anterior (V1-V4)</button>
+              <button class="answer-btn">🔴 Lateral (I, aVL, V5-V6)</button>
+              <button class="answer-btn selected-abnormal">🔴 Inferior (II, III, aVF)</button>
+              <button class="answer-btn">🔴 Posterior</button>
+              <button class="answer-btn">🔴 Right Ventricular</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card answered">
+            <div class="question-label">CARDIAC — A5</div>
+            <div class="question-text">12-Lead transmitted to hospital?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal">✅ Yes — Confirmed Received</button>
+              <button class="answer-btn">✅ Yes — Awaiting confirmation</button>
+              <button class="answer-btn">❌ No</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="question-card answered">
+            <div class="question-label">CARDIAC — A6</div>
+            <div class="question-text">Right-sided ECG (V4R) obtained?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal">✅ Yes — V4R Positive</button>
+              <button class="answer-btn">✅ Yes — V4R Negative</button>
+              <button class="answer-btn">❌ No — Not indicated</button>
+              <button class="answer-btn">❌ No — Unable</button>
+            </div>
+            <div class="add-notes-toggle" onclick="toggleNotes(this)">📝 Add Notes</div>
+          </div>
+
+          <div class="assessment-section-header">💧 IV/IO VASCULAR ACCESS</div>
+
+          <div class="question-card answered">
+            <div class="question-label">IV/IO — A7</div>
+            <div class="question-text">Vascular access established?</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal">✅ Yes — IV</button>
+              <button class="answer-btn">✅ Yes — IO</button>
+              <button class="answer-btn">❌ Not indicated</button>
+              <button class="answer-btn">❌ Unable after attempts</button>
+            </div>
+          </div>
+
+          <div class="assessment-section-header">💊 MEDICATION ADMINISTRATION</div>
+
+          <div class="question-card answered">
+            <div class="question-label">MEDICATIONS — A9</div>
+            <div class="question-text">Medications administered — select all that apply:</div>
+            <div class="answer-buttons">
+              <button class="answer-btn selected-normal">ASA 324mg PO ✓</button>
+              <button class="answer-btn selected-normal">NTG 0.4mg SL ✓</button>
+              <button class="answer-btn">Fentanyl IV</button>
+              <button class="answer-btn">Heparin IV</button>
+              <button class="answer-btn">Amiodarone</button>
+              <button class="answer-btn">Epinephrine</button>
+              <button class="answer-btn">Ondansetron</button>
+              <button class="answer-btn">Other</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALS Summary Panel -->
+        <div>
+          <div class="summary-panel">
+            <h3>💉 ALS Summary</h3>
+            <div class="summary-section-title">Cardiac</div>
+            <div class="summary-row"><span class="summary-label">Monitor</span><span class="summary-value tag tag-green">Zoll Linked</span></div>
+            <div class="summary-row"><span class="summary-label">Rhythm</span><span class="summary-value tag tag-orange">Sinus Tach</span></div>
+            <div class="summary-row"><span class="summary-label">12-Lead</span><span class="summary-value tag tag-red">STEMI 🚨</span></div>
+            <div class="summary-row"><span class="summary-label">Territory</span><span class="summary-value tag tag-red">Inferior</span></div>
+            <div class="summary-row"><span class="summary-label">Transmitted</span><span class="summary-value tag tag-green">Confirmed</span></div>
+            <div class="summary-row"><span class="summary-label">V4R</span><span class="summary-value tag tag-red">Positive</span></div>
+            <div class="summary-section-title">Vascular Access</div>
+            <div class="summary-row"><span class="summary-label">Access</span><span class="summary-value tag tag-green">IV — L AC</span></div>
+            <div class="summary-section-title">Medications</div>
+            <div class="summary-row"><span class="summary-label">ASA</span><span class="summary-value tag tag-green">324mg PO</span></div>
+            <div class="summary-row"><span class="summary-label">NTG</span><span class="summary-value tag tag-green">0.4mg SL</span></div>
+
+            <div style="margin-top:12px;padding:10px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;">
+              <div style="font-size:0.78rem;font-weight:700;color:var(--accent-purple);margin-bottom:4px;">🧠 AI Insight</div>
+              <div style="font-size:0.78rem;color:var(--text-secondary);">Inferior STEMI with hypotension — obtain V4R to rule out RV involvement. Hold further NTG if RV positive. Consider fluid challenge.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ZOLL MONITOR ==================== -->
+    <div id="page-zoll" class="page-content hidden">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📡 Zoll Monitor Integration</div>
+          <div class="page-subtitle">Real-time device link — cardiac rhythm, vitals, and 12-Lead management</div>
+        </div>
+        <button class="btn btn-success btn-sm">🔄 Sync Now</button>
+      </div>
+
+      <div class="zoll-panel">
+        <div class="zoll-header">
+          <div>
+            <span class="zoll-device-name">ZOLL X-Series</span>
+            <span style="color:var(--accent-green);font-size:0.82rem;margin-left:10px;">Bluetooth Connected</span>
+            <span style="color:var(--text-muted);font-size:0.78rem;margin-left:10px;">S/N: ZX-48291-A</span>
+          </div>
+          <div class="zoll-status">
+            <span>🔋 82%</span>
+            <span style="color:var(--text-muted)">Auto-sync: 30s</span>
+          </div>
+        </div>
+
+        <div style="padding:4px 16px;background:#080c12;font-size:0.78rem;">
+          <span style="color:var(--accent-green);font-family:var(--font-mono);">LEAD II — Sinus Tachycardia · 112 BPM</span>
+        </div>
+
+        <canvas id="ecgCanvas" class="zoll-ecg-canvas"></canvas>
+
+        <div class="zoll-vitals">
+          <div class="zoll-vital hr"><div class="zv-label">Heart Rate</div><div class="zv-value" id="zoll-hr">112</div><div class="zv-unit">BPM</div></div>
+          <div class="zoll-vital spo2"><div class="zv-label">SPO2</div><div class="zv-value">94</div><div class="zv-unit">%</div></div>
+          <div class="zoll-vital etco2"><div class="zv-label">ETCO2</div><div class="zv-value">38</div><div class="zv-unit">mmHg</div></div>
+          <div class="zoll-vital bp"><div class="zv-label">NIBP</div><div class="zv-value">88/54</div><div class="zv-unit">mmHg</div></div>
+          <div class="zoll-vital temp"><div class="zv-label">TEMP</div><div class="zv-value">99.1</div><div class="zv-unit">°F</div></div>
+        </div>
+
+        <!-- 12-Lead Section -->
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;background:#111a24;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <strong>12-Lead ECG</strong>
+            <span class="tag tag-red">🔴 STEMI — INFERIOR</span>
+            <span style="font-size:0.78rem;color:var(--text-muted)">Acquired: 14:27:15</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-danger btn-sm">📤 Transmit to Hospital</button>
+            <button class="btn btn-outline btn-sm">📋 View Full</button>
+            <button class="btn btn-outline btn-sm">🔄 New 12-Lead</button>
+          </div>
+        </div>
+
+        <div class="twelve-lead-grid">
+          <div class="lead-cell"><span class="lead-label">I</span><canvas class="lead-canvas" data-lead="I"></canvas></div>
+          <div class="lead-cell"><span class="lead-label">aVR</span><canvas class="lead-canvas" data-lead="aVR"></canvas></div>
+          <div class="lead-cell"><span class="lead-label">V1</span><canvas class="lead-canvas" data-lead="V1"></canvas></div>
+          <div class="lead-cell"><span class="lead-label">V4</span><canvas class="lead-canvas" data-lead="V4"></canvas></div>
+          <div class="lead-cell stemi"><span class="lead-label">II ▲</span><canvas class="lead-canvas" data-lead="II"></canvas></div>
+          <div class="lead-cell"><span class="lead-label">aVL</span><canvas class="lead-canvas" data-lead="aVL"></canvas></div>
+          <div class="lead-cell"><span class="lead-label">V2</span><canvas class="lead-canvas" data-lead="V2"></canvas></div>
+          <div class="lead-cell"><span class="lead-label">V5</span><canvas class="lead-canvas" data-lead="V5"></canvas></div>
+          <div class="lead-cell stemi"><span class="lead-label">III ▲</span><canvas class="lead-canvas" data-lead="III"></canvas></div>
+          <div class="lead-cell stemi"><span class="lead-label">aVF ▲</span><canvas class="lead-canvas" data-lead="aVF"></canvas></div>
+          <div class="lead-cell"><span class="lead-label">V3</span><canvas class="lead-canvas" data-lead="V3"></canvas></div>
+          <div class="lead-cell"><span class="lead-label">V6</span><canvas class="lead-canvas" data-lead="V6"></canvas></div>
+        </div>
+
+        <!-- Transmission Status -->
+        <div style="padding:12px 16px;background:#111a24;display:flex;align-items:center;gap:12px;">
+          <span class="tag tag-green">✅ Transmitted</span>
+          <span style="font-size:0.82rem;"><strong>Memorial Hospital</strong></span>
+          <span style="font-size:0.78rem;color:var(--text-muted);">Sent: 14:27:22 · Received: 14:27:24 · Acknowledged by Dr. Kim, Cardiology</span>
+          <span class="tag tag-red" style="margin-left:auto;">CATH LAB ACTIVATED</span>
+        </div>
+      </div>
+
+      <!-- Auto-Imported Vitals History -->
+      <div class="card mt-2">
+        <div class="card-header">
+          <div class="card-title">📊 Auto-Imported Vitals History</div>
+          <span class="tag tag-cyan">ZOLL AUTO-SYNC</span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Time</th><th>HR</th><th>BP</th><th>SPO2</th><th>ETCO2</th><th>RR</th><th>Rhythm</th><th>Source</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>14:30:00</td><td style="color:var(--accent-red)">112</td><td style="color:var(--accent-yellow)">88/54</td><td>94%</td><td>38</td><td>22</td><td>SINUS TACH</td><td class="tag tag-cyan" style="font-size:0.7rem">Zoll Auto</td></tr>
+            <tr><td>14:26:00</td><td>108</td><td>92/58</td><td>95%</td><td>40</td><td>20</td><td>SINUS TACH</td><td class="tag tag-cyan" style="font-size:0.7rem">Zoll Auto</td></tr>
+            <tr><td>14:22:30</td><td>102</td><td>102/68</td><td>96%</td><td>42</td><td>18</td><td>SINUS TACH</td><td class="tag tag-cyan" style="font-size:0.7rem">Zoll Auto</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== ID SCANNER / OCR ==================== -->
+    <div id="page-idscanner" class="page-content hidden">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📷 Patient ID Scanner</div>
+          <div class="page-subtitle">Photograph a driver's license or ID card for automatic field population</div>
+        </div>
+        <button class="btn btn-outline">Skip — Enter Manually ➜</button>
+      </div>
+      <div class="grid-2">
+        <div class="card" style="text-align:center;">
+          <div style="border:2px dashed var(--accent-cyan);border-radius:12px;padding:60px 40px;margin-bottom:16px;position:relative;overflow:hidden;">
+            <div style="font-size:3rem;margin-bottom:8px;">🪪</div>
+            <div style="color:var(--text-muted);">Position ID card here</div>
+            <div style="font-size:0.82rem;color:var(--accent-cyan);margin-top:8px;">Align driver's license within the frame — auto-capture enabled</div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <button class="btn btn-primary">📸 Capture Photo</button>
+            <button class="btn btn-outline">🔄 Switch Camera</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">ℹ️ Instructions</div>
+          <div style="margin-top:12px;font-size:0.85rem;line-height:1.8;color:var(--text-secondary);">
+            1. Hold the device camera over the patient's driver's license or photo ID<br>
+            2. Align the ID within the blue guide frame<br>
+            3. The system will automatically detect and capture the image<br>
+            4. OCR will extract: Name, DOB, Address, Sex, DL Number<br>
+            5. Review and verify all extracted fields before confirming<br>
+            6. Fields with ⚠️ yellow confidence should be manually verified
+          </div>
+          <div class="alert-banner alert-orange mt-2" style="font-size:0.78rem;">
+            🔒 ID photos are processed on-device only (no cloud OCR). Images are encrypted and stored as ePCR attachments per HIPAA requirements.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== NARRATIVE ==================== -->
+    <div id="page-narrative" class="page-content hidden">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📝 Narrative</div>
+          <div class="page-subtitle">Clinical narrative — auto-generated from assessment data</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-success btn-sm">🧠 AI Auto-Generate</button>
+          <button class="btn btn-outline btn-sm">🎤 Voice Dictation</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Patient Care Narrative</div>
+        <textarea class="form-textarea" style="min-height:400px;font-size:0.88rem;line-height:1.7;">Medic 2 dispatched to 1200 Oak Street, Apt 4B for report of chest pain in a 67-year-old male. Unit en route at 14:22:48, on scene at 14:26:15.
+
+Patient found seated in recliner, awake and alert, in obvious distress. Patient reports crushing substernal chest pain radiating to left arm and jaw, onset approximately 30 minutes prior while mowing lawn. Pain rated 9/10. Associated symptoms include diaphoresis, nausea, and shortness of breath.
+
+PMHx: HTN, Hyperlipidemia, Type 2 DM. Medications: Metoprolol 50mg, Atorvastatin 40mg, Metformin 1000mg. Allergies: Penicillin (rash). Patient took 1 baby ASA at home prior to EMS arrival. No prior cardiac history or surgeries.
+
+Primary assessment: Alert, A&Ox4. Airway patent, clear sounds. Breathing adequate but labored with accessory muscle use. Speaking in short sentences. Breath sounds clear bilaterally. Pulse present radial, tachycardic. Skin pale, cool, diaphoretic. No external bleeding.
+
+Initial vitals (14:22): HR 102, BP 102/68, SpO2 96%, RR 18. Zoll monitor applied, sinus tachycardia noted.
+
+Interventions: ASA 324mg PO (patient's own) at 14:24. NTG 0.4mg SL at 14:25 — minimal relief. 18ga IV established L AC, first attempt, NS at TKO. 12-Lead ECG acquired at 14:27 — ST elevation in leads II, III, aVF consistent with inferior STEMI. V4R obtained — positive for ST elevation suggesting right ventricular involvement.
+
+12-Lead transmitted to Memorial Hospital at 14:27 — confirmed received by Dr. Kim, Cardiology. Cath lab activated. NTG held due to RV involvement and hypotension. 500mL NS bolus initiated.
+
+Second vitals (14:30): HR 112, BP 88/54, SpO2 94%, RR 22, ETCO2 38. Patient loaded for transport to Memorial Hospital, ETA 8 minutes.
+
+Continued monitoring en route. Patient remains alert but anxious. Pain 7/10 with positional improvement. Report called to receiving ER.</textarea>
+      </div>
+    </div>
+
+    <!-- ==================== HOSPITAL HANDOFF ==================== -->
+    <div id="page-handoff" class="page-content hidden">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🤝 Hospital Handoff & Care Transfer</div>
+          <div class="page-subtitle">Digital care transfer to receiving hospital — Epic & Athena EMR integration</div>
+        </div>
+      </div>
+
+      <!-- Active STEMI Alert -->
+      <div class="alert-banner alert-red">
+        🚨 <strong>STEMI ALERT ACTIVE</strong> — Cath Lab activated at Memorial Hospital · Dr. Kim, Cardiology accepting · ETA 4 min
+      </div>
+
+      <!-- Handoff Status Flow -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:4px;">Care Transfer Status</div>
+        <div class="handoff-status-flow">
+          <div class="handoff-step completed">
+            <div class="step-dot">✓</div>
+            <div class="step-label">Pre-Arrival<br>Sent</div>
+          </div>
+          <div class="handoff-step completed">
+            <div class="step-dot">✓</div>
+            <div class="step-label">Hospital<br>Received</div>
+          </div>
+          <div class="handoff-step completed">
+            <div class="step-dot">✓</div>
+            <div class="step-label">12-Lead<br>Reviewed</div>
+          </div>
+          <div class="handoff-step completed">
+            <div class="step-dot">✓</div>
+            <div class="step-label">Cath Lab<br>Activated</div>
+          </div>
+          <div class="handoff-step active">
+            <div class="step-dot">●</div>
+            <div class="step-label">Arriving<br>at Hospital</div>
+          </div>
+          <div class="handoff-step">
+            <div class="step-dot"></div>
+            <div class="step-label">Bedside<br>Handoff</div>
+          </div>
+          <div class="handoff-step">
+            <div class="step-dot"></div>
+            <div class="step-label">Care Transfer<br>Complete</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:16px;">
+        <!-- Left: What's being sent -->
+        <div>
+          <!-- Receiving Hospital -->
+          <div class="handoff-card" style="margin-bottom:16px;">
+            <div class="handoff-card-header">
+              <div>
+                <strong style="font-size:1.05rem;">🏥 Memorial Hospital</strong>
+                <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">1500 Medical Center Dr · Level I Trauma · STEMI Receiving</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--accent-cyan);">ETA 4:22</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);">3.2 miles</div>
+              </div>
+            </div>
+            <div class="handoff-card-body">
+              <div class="grid-2" style="gap:12px;">
+                <div>
+                  <div class="form-label">Receiving Physician</div>
+                  <div style="font-weight:700;">Dr. Sarah Kim, MD</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);">Interventional Cardiology</div>
+                </div>
+                <div>
+                  <div class="form-label">Receiving Nurse</div>
+                  <div style="font-weight:700;">RN Jennifer Walsh</div>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);">ER Bay 1 — Cath Lab Prep</div>
+                </div>
+                <div>
+                  <div class="form-label">EMR System</div>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span class="tag tag-green">● Connected</span>
+                    <strong>Epic (FHIR R4)</strong>
+                  </div>
+                  <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">OAuth Token: Active · Latency: 42ms</div>
+                </div>
+                <div>
+                  <div class="form-label">Hospital Prep Status</div>
+                  <div class="tag tag-red" style="font-size:0.82rem;">CATH LAB ACTIVATED</div>
+                  <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Team ETA to ready: 2 min</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FHIR Data Package -->
+          <div class="handoff-card" style="margin-bottom:16px;">
+            <div class="handoff-card-header">
+              <strong>📤 FHIR Data Package — Transmitted to Epic</strong>
+              <span class="tag tag-green">14/14 Resources Sent</span>
+            </div>
+            <div class="handoff-card-body" style="padding:8px 18px;">
+              <div class="fhir-log-entry">
+                <span class="log-time">14:27:22</span>
+                <span class="log-method post">POST</span>
+                <span class="log-resource">Patient</span>
+                <span class="log-status success">201 Created</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+              <div class="fhir-log-entry">
+                <span class="log-time">14:27:22</span>
+                <span class="log-method post">POST</span>
+                <span class="log-resource">Encounter (EMS)</span>
+                <span class="log-status success">201 Created</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+              <div class="fhir-log-entry">
+                <span class="log-time">14:27:23</span>
+                <span class="log-method post">POST</span>
+                <span class="log-resource">Condition (STEMI)</span>
+                <span class="log-status success">201 Created</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+              <div class="fhir-log-entry">
+                <span class="log-time">14:27:23</span>
+                <span class="log-method post">POST</span>
+                <span class="log-resource">Observation x6 (Vitals)</span>
+                <span class="log-status success">201 Created</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+              <div class="fhir-log-entry">
+                <span class="log-time">14:27:24</span>
+                <span class="log-method post">POST</span>
+                <span class="log-resource">DiagnosticReport (12-Lead)</span>
+                <span class="log-status success">201 Created</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+              <div class="fhir-log-entry">
+                <span class="log-time">14:27:24</span>
+                <span class="log-method post">POST</span>
+                <span class="log-resource">Binary (ECG Waveform SCP)</span>
+                <span class="log-status success">201 Created</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+              <div class="fhir-log-entry">
+                <span class="log-time">14:27:25</span>
+                <span class="log-method post">POST</span>
+                <span class="log-resource">MedicationAdmin x2</span>
+                <span class="log-status success">201 Created</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+              <div class="fhir-log-entry">
+                <span class="log-time">14:27:25</span>
+                <span class="log-method post">POST</span>
+                <span class="log-resource">Flag (STEMI Alert)</span>
+                <span class="log-status success">201 Created</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+              <div class="fhir-log-entry">
+                <span class="log-time">14:27:26</span>
+                <span class="log-method post">POST</span>
+                <span class="log-resource">Task (Care Transfer)</span>
+                <span class="log-status pending">Requested</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+              <div class="fhir-log-entry">
+                <span class="log-time">14:30:01</span>
+                <span class="log-method put">PUT</span>
+                <span class="log-resource">Observation x6 (Updated Vitals)</span>
+                <span class="log-status success">200 OK</span>
+                <span class="log-target">→ Epic FHIR R4</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Handoff Actions -->
+        <div>
+          <!-- Patient Summary for Handoff -->
+          <div class="handoff-card" style="margin-bottom:16px;">
+            <div class="handoff-card-header">
+              <strong>🧑 Patient Handoff Summary</strong>
+              <span class="tag tag-red">STEMI</span>
+            </div>
+            <div class="handoff-card-body">
+              <div class="summary-row"><span class="summary-label">Name</span><span class="summary-value">Robert Mitchell</span></div>
+              <div class="summary-row"><span class="summary-label">Age/Sex</span><span class="summary-value">67M</span></div>
+              <div class="summary-row"><span class="summary-label">Chief Complaint</span><span class="summary-value">Crushing chest pain, radiating L arm/jaw</span></div>
+              <div class="summary-row"><span class="summary-label">Primary Impression</span><span class="summary-value tag tag-red">Acute Inferior STEMI</span></div>
+              <div class="summary-row"><span class="summary-label">PMHx</span><span class="summary-value">HTN, HLD, DM2</span></div>
+              <div class="summary-row"><span class="summary-label">Allergies</span><span class="summary-value tag tag-orange">Penicillin (rash)</span></div>
+
+              <div class="summary-section-title">Current Vitals (14:30)</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;">
+                <div class="vital-box critical" style="padding:8px;"><div class="vital-label" style="font-size:0.6rem;">HR</div><div class="vital-value" style="font-size:1.2rem;">112</div></div>
+                <div class="vital-box warning" style="padding:8px;"><div class="vital-label" style="font-size:0.6rem;">BP</div><div class="vital-value" style="font-size:1.2rem;">88/54</div></div>
+                <div class="vital-box warning" style="padding:8px;"><div class="vital-label" style="font-size:0.6rem;">SPO2</div><div class="vital-value" style="font-size:1.2rem;">94%</div></div>
+              </div>
+
+              <div class="summary-section-title">Interventions</div>
+              <div class="summary-row"><span class="summary-label">ASA 324mg PO</span><span class="summary-value text-sm">14:24</span></div>
+              <div class="summary-row"><span class="summary-label">NTG 0.4mg SL</span><span class="summary-value text-sm">14:25 — minimal relief</span></div>
+              <div class="summary-row"><span class="summary-label">IV NS TKO — 18ga L AC</span><span class="summary-value text-sm">14:26</span></div>
+              <div class="summary-row"><span class="summary-label">NS Bolus 500mL</span><span class="summary-value text-sm">14:30 — running</span></div>
+
+              <div class="summary-section-title">12-Lead ECG</div>
+              <div class="summary-row"><span class="summary-label">Interpretation</span><span class="summary-value tag tag-red">STEMI — Inferior</span></div>
+              <div class="summary-row"><span class="summary-label">V4R</span><span class="summary-value tag tag-red">Positive (RV)</span></div>
+              <div class="summary-row"><span class="summary-label">Transmitted</span><span class="summary-value tag tag-green">Confirmed ✓</span></div>
+            </div>
+          </div>
+
+          <!-- Digital Signatures -->
+          <div class="handoff-card">
+            <div class="handoff-card-header">
+              <strong>✍️ Digital Care Transfer Signatures</strong>
+            </div>
+            <div class="handoff-card-body">
+              <div class="form-label">EMS Provider Releasing Care</div>
+              <div class="signature-box signed" style="margin-bottom:16px;">
+                <div class="sig-label">Signed ✓</div>
+                <div class="sig-name">PM Thompson, NRP</div>
+                <div class="sig-time">Paramedic · Medic 2 · 14:34:22</div>
+              </div>
+
+              <div class="form-label">Hospital Provider Accepting Care</div>
+              <div class="signature-box">
+                <div style="font-size:2rem;margin-bottom:8px;">✍️</div>
+                <div class="sig-label">Awaiting hospital clinician signature</div>
+                <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Dr. Kim or RN Walsh will sign upon bedside handoff</div>
+              </div>
+
+              <div style="margin-top:16px;display:flex;gap:8px;">
+                <button class="btn btn-success btn-lg" style="flex:1;">✅ Complete Care Transfer</button>
+              </div>
+              <div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);text-align:center;">
+                Completing transfer will finalize the FHIR Task resource and close the EMS encounter
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== EMR CONNECTION STATUS ==================== -->
+    <div id="page-emr" class="page-content hidden">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🔗 Hospital EMR Connections</div>
+          <div class="page-subtitle">Manage FHIR R4 and HL7v2 connections to hospital electronic medical records</div>
+        </div>
+        <button class="btn btn-primary btn-sm">+ Add Hospital</button>
+      </div>
+
+      <!-- Connection Cards -->
+      <div class="grid-3" style="margin-bottom:20px;">
+        <div class="card" style="border-top:3px solid var(--accent-green);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div>
+              <div style="font-weight:700;font-size:1.05rem;">Memorial Hospital</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);">Epic Systems — FHIR R4</div>
+            </div>
+            <span class="tag tag-green">● CONNECTED</span>
+          </div>
+          <div class="summary-row"><span class="summary-label">Endpoint</span><span class="summary-value text-sm">fhir.memorial.org/R4</span></div>
+          <div class="summary-row"><span class="summary-label">Auth</span><span class="summary-value text-sm">OAuth 2.0 SMART</span></div>
+          <div class="summary-row"><span class="summary-label">Token Expires</span><span class="summary-value text-sm font-mono">4:52 remaining</span></div>
+          <div class="summary-row"><span class="summary-label">Latency</span><span class="summary-value text-sm font-mono" style="color:var(--accent-green)">42ms</span></div>
+          <div class="summary-row"><span class="summary-label">Last Sync</span><span class="summary-value text-sm">12 sec ago</span></div>
+          <div class="summary-row"><span class="summary-label">Resources Sent</span><span class="summary-value text-sm font-mono">14</span></div>
+          <div style="margin-top:12px;">
+            <div class="form-label">Supported Resources</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              <span class="tag tag-cyan">Patient</span>
+              <span class="tag tag-cyan">Encounter</span>
+              <span class="tag tag-cyan">Observation</span>
+              <span class="tag tag-cyan">DiagnosticReport</span>
+              <span class="tag tag-cyan">Binary</span>
+              <span class="tag tag-cyan">MedAdmin</span>
+              <span class="tag tag-cyan">Procedure</span>
+              <span class="tag tag-cyan">Condition</span>
+              <span class="tag tag-cyan">Flag</span>
+              <span class="tag tag-cyan">Task</span>
+              <span class="tag tag-cyan">DocumentRef</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="border-top:3px solid var(--accent-green);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div>
+              <div style="font-weight:700;font-size:1.05rem;">St. Mary's Medical</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);">Athenahealth — FHIR R4</div>
+            </div>
+            <span class="tag tag-green">● CONNECTED</span>
+          </div>
+          <div class="summary-row"><span class="summary-label">Endpoint</span><span class="summary-value text-sm">api.athena.io/fhir/r4</span></div>
+          <div class="summary-row"><span class="summary-label">Auth</span><span class="summary-value text-sm">OAuth 2.0 Client Cred</span></div>
+          <div class="summary-row"><span class="summary-label">Token Expires</span><span class="summary-value text-sm font-mono">52:10 remaining</span></div>
+          <div class="summary-row"><span class="summary-label">Latency</span><span class="summary-value text-sm font-mono" style="color:var(--accent-green)">68ms</span></div>
+          <div class="summary-row"><span class="summary-label">Last Sync</span><span class="summary-value text-sm">45 sec ago</span></div>
+          <div class="summary-row"><span class="summary-label">Resources Sent</span><span class="summary-value text-sm font-mono">0</span></div>
+          <div style="margin-top:12px;">
+            <div class="form-label">Supported Resources</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+              <span class="tag tag-cyan">Patient</span>
+              <span class="tag tag-cyan">Encounter</span>
+              <span class="tag tag-cyan">Observation</span>
+              <span class="tag tag-cyan">DiagnosticReport</span>
+              <span class="tag tag-cyan">Condition</span>
+              <span class="tag tag-cyan">DocumentRef</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="border-top:3px solid var(--accent-red);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div>
+              <div style="font-weight:700;font-size:1.05rem;">County General</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);">Cerner/Oracle — HL7v2 Fallback</div>
+            </div>
+            <span class="tag tag-red">● OFFLINE</span>
+          </div>
+          <div class="summary-row"><span class="summary-label">Interface</span><span class="summary-value text-sm">HL7v2.5.1 ADT/ORU</span></div>
+          <div class="summary-row"><span class="summary-label">Status</span><span class="summary-value text-sm" style="color:var(--accent-red)">Connection timeout</span></div>
+          <div class="summary-row"><span class="summary-label">Last Attempt</span><span class="summary-value text-sm">2 min ago</span></div>
+          <div class="summary-row"><span class="summary-label">Queued Msgs</span><span class="summary-value text-sm font-mono" style="color:var(--accent-yellow)">3 pending</span></div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-outline btn-sm w-full">🔄 Retry Connection</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connection Architecture -->
+      <div class="card">
+        <div class="card-title">📐 Integration Architecture</div>
+        <div style="margin-top:12px;padding:20px;background:var(--bg-primary);border-radius:8px;font-family:var(--font-mono);font-size:0.75rem;line-height:1.8;color:var(--text-secondary);">
+<pre style="margin:0;white-space:pre-wrap;">
+EmergencyOS EMS Client
+    │
+    ├── FHIR Resource Assembler (Patient, Encounter, Observation, DiagnosticReport, Binary, MedAdmin, Procedure, Condition, Flag, Task, DocumentRef)
+    │
+    ├── Offline Queue (IndexedDB + AES-256-GCM encryption)
+    │
+    └── Integration Gateway (TLS 1.3 / mTLS)
+         │
+         ├── Epic Adapter ──────── FHIR R4 (SMART on FHIR / OAuth 2.0 Backend Services)
+         │   └── Patient.$match → Bundle POST → Subscription polling
+         │
+         ├── Athena Adapter ────── FHIR R4 (OAuth 2.0 Client Credentials)
+         │   └── Patient search → Individual resource POST → Event Notifications webhook
+         │
+         ├── Cerner Adapter ────── FHIR R4 (OAuth 2.0)
+         │   └── Standard FHIR workflow
+         │
+         └── HL7v2 Adapter ─────── ADT^A04, ORU^R01, MDM^T02
+             └── For legacy EMRs (MEDITECH, Allscripts, etc.)
+</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== FHIR TRANSMISSION LOG ==================== -->
+    <div id="page-fhir" class="page-content hidden">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📤 FHIR Transmission Log</div>
+          <div class="page-subtitle">Real-time log of all HL7 FHIR R4 API calls to hospital EMR systems</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <span class="tag tag-green">14 Successful</span>
+          <span class="tag tag-yellow">1 Pending</span>
+          <span class="tag tag-red">0 Failed</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="fhir-log-entry" style="font-weight:700;border-bottom:2px solid var(--border-color);">
+          <span class="log-time">TIME</span>
+          <span class="log-method" style="background:none;">METHOD</span>
+          <span class="log-resource">FHIR RESOURCE</span>
+          <span class="log-status">STATUS</span>
+          <span class="log-target">DESTINATION</span>
+        </div>
+        <div class="fhir-log-entry"><span class="log-time">14:30:01</span><span class="log-method put">PUT</span><span class="log-resource">Observation x6</span><span class="log-status success">200 OK</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:26</span><span class="log-method post">POST</span><span class="log-resource">Task (Care Transfer)</span><span class="log-status pending">202 Accepted</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:25</span><span class="log-method post">POST</span><span class="log-resource">Flag (STEMI Alert)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:25</span><span class="log-method post">POST</span><span class="log-resource">MedicationAdmin (ASA)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:25</span><span class="log-method post">POST</span><span class="log-resource">MedicationAdmin (NTG)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:24</span><span class="log-method post">POST</span><span class="log-resource">Binary (SCP-ECG Waveform)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:24</span><span class="log-method post">POST</span><span class="log-resource">DiagnosticReport (12-Lead)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:23</span><span class="log-method post">POST</span><span class="log-resource">Observation (SpO2)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:23</span><span class="log-method post">POST</span><span class="log-resource">Observation (BP)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:23</span><span class="log-method post">POST</span><span class="log-resource">Observation (HR)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:23</span><span class="log-method post">POST</span><span class="log-resource">Condition (I21.19 STEMI)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:22</span><span class="log-method post">POST</span><span class="log-resource">Encounter (EMS Transport)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:22</span><span class="log-method post">POST</span><span class="log-resource">Patient (Robert Mitchell)</span><span class="log-status success">201 Created</span><span class="log-target">Epic — Memorial Hospital</span></div>
+        <div class="fhir-log-entry"><span class="log-time">14:27:20</span><span class="log-method get">GET</span><span class="log-resource">Patient.$match (lookup)</span><span class="log-status success">200 OK — Match found</span><span class="log-target">Epic — Memorial Hospital</span></div>
+      </div>
+    </div>
+
+    <!-- ==================== ER RECEIVING DASHBOARD ==================== -->
+    <div id="page-er-dashboard" class="page-content hidden">
+      <!-- This would be the hospital-side view -->
+    </div>
+
+    <!-- Placeholder pages for complete navigation -->
+    <div id="page-runinfo" class="page-content hidden">
+      <div class="page-title">📋 Run Info</div>
+      <div class="page-subtitle">Incident and unit response information</div>
+      <div class="card mt-2">
+        <div class="grid-2">
+          <div class="form-group"><div class="form-label">Incident Number</div><input class="form-input" value="INC-2024-0848" readonly></div>
+          <div class="form-group"><div class="form-label">Date</div><input class="form-input" value="2024-03-15" readonly></div>
+          <div class="form-group"><div class="form-label">Unit</div><input class="form-input" value="Medic 2"></div>
+          <div class="form-group"><div class="form-label">Crew</div><input class="form-input" value="PM Thompson (P), EMT Davis (D)"></div>
+          <div class="form-group"><div class="form-label">Dispatch Time</div><input class="form-input" value="14:20:30" readonly></div>
+          <div class="form-group"><div class="form-label">En Route</div><input class="form-input" value="14:22:48" readonly></div>
+          <div class="form-group"><div class="form-label">On Scene</div><input class="form-input" value="14:26:15" readonly></div>
+          <div class="form-group"><div class="form-label">Transport</div><input class="form-input" value="14:31:00"></div>
+          <div class="form-group"><div class="form-label">At Hospital</div><input class="form-input" value="--:--:--" placeholder="Pending"></div>
+          <div class="form-group"><div class="form-label">Transfer of Care</div><input class="form-input" value="--:--:--" placeholder="Pending"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-demographics" class="page-content hidden">
+      <div class="page-title">👤 Demographics</div>
+      <div class="page-subtitle">Patient demographics — auto-populated from ID Scanner OCR</div>
+      <div class="alert-banner alert-green mt-2">✅ Fields auto-populated from driver's license scan — verify highlighted fields</div>
+      <div class="card">
+        <div class="grid-3">
+          <div class="form-group"><div class="form-label">Last Name</div><input class="form-input" value="Mitchell"></div>
+          <div class="form-group"><div class="form-label">First Name</div><input class="form-input" value="Robert"></div>
+          <div class="form-group"><div class="form-label">Middle</div><input class="form-input" value="James"></div>
+          <div class="form-group"><div class="form-label">Date of Birth</div><input class="form-input" value="1957-06-14"></div>
+          <div class="form-group"><div class="form-label">Age</div><input class="form-input" value="67" readonly></div>
+          <div class="form-group"><div class="form-label">Sex</div><select class="form-select"><option selected>Male</option><option>Female</option></select></div>
+          <div class="form-group"><div class="form-label">Address</div><input class="form-input" value="1200 Oak Street, Apt 4B"></div>
+          <div class="form-group"><div class="form-label">City</div><input class="form-input" value="Springfield"></div>
+          <div class="form-group"><div class="form-label">State / ZIP</div><input class="form-input" value="IL 62704"></div>
+          <div class="form-group"><div class="form-label">DL Number</div><input class="form-input" value="M498-2215-6847"></div>
+          <div class="form-group"><div class="form-label">SSN (Last 4)</div><input class="form-input" value="••••4872"></div>
+          <div class="form-group"><div class="form-label">Phone</div><input class="form-input" value="(217) 555-0148"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-vitals" class="page-content hidden">
+      <div class="page-title">💓 Vitals / Monitor</div>
+      <div class="page-subtitle">Vital signs history — Zoll auto-import + manual entries</div>
+      <div class="card mt-2">
+        <table class="data-table">
+          <thead><tr><th>Time</th><th>HR</th><th>BP</th><th>SPO2</th><th>ETCO2</th><th>RR</th><th>GCS</th><th>Pain</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td>14:30:00</td><td style="color:var(--accent-red)">112</td><td style="color:var(--accent-yellow)">88/54</td><td>94%</td><td>38</td><td>22</td><td>15</td><td>7/10</td><td class="tag tag-cyan">Zoll</td></tr>
+            <tr><td>14:26:00</td><td>108</td><td>92/58</td><td>95%</td><td>40</td><td>20</td><td>15</td><td>8/10</td><td class="tag tag-cyan">Zoll</td></tr>
+            <tr><td>14:22:30</td><td>102</td><td>102/68</td><td>96%</td><td>42</td><td>18</td><td>15</td><td>9/10</td><td class="tag tag-blue">Manual</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="page-medications" class="page-content hidden">
+      <div class="page-title">💊 Medications</div>
+      <div class="page-subtitle">Medications administered during this encounter</div>
+      <div class="card mt-2">
+        <table class="data-table">
+          <thead><tr><th>Time</th><th>Medication</th><th>Dose</th><th>Route</th><th>Provider</th><th>Response</th></tr></thead>
+          <tbody>
+            <tr><td>14:24:00</td><td>Aspirin</td><td>324mg</td><td>PO</td><td>PM Thompson</td><td class="tag tag-green">Given</td></tr>
+            <tr><td>14:25:00</td><td>Nitroglycerin</td><td>0.4mg</td><td>SL</td><td>PM Thompson</td><td class="tag tag-orange">Minimal relief</td></tr>
+            <tr><td>14:30:00</td><td>Normal Saline</td><td>500mL bolus</td><td>IV</td><td>PM Thompson</td><td class="tag tag-green">Running</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="page-disposition" class="page-content hidden">
+      <div class="page-title">🏥 Disposition</div>
+      <div class="page-subtitle">Transport destination and patient disposition</div>
+      <div class="card mt-2">
+        <div class="grid-2">
+          <div class="form-group"><div class="form-label">Disposition</div><select class="form-select"><option selected>Transported by this unit</option></select></div>
+          <div class="form-group"><div class="form-label">Transport Mode</div><select class="form-select"><option selected>Lights & Sirens</option></select></div>
+          <div class="form-group"><div class="form-label">Destination</div><input class="form-input" value="Memorial Hospital — Emergency Department"></div>
+          <div class="form-group"><div class="form-label">Reason for Destination</div><select class="form-select"><option selected>Closest Appropriate — STEMI Receiving Center</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-ai" class="page-content hidden">
+      <div class="page-title">🧠 AI Clinical Support</div>
+      <div class="page-subtitle">AI-powered protocol guidance and clinical decision support</div>
+      <div class="alert-banner alert-red mt-2">🚨 <strong>STEMI Protocol Activated</strong> — Inferior STEMI with suspected RV involvement detected</div>
+      <div class="card">
+        <div class="card-title">Protocol Recommendations</div>
+        <div class="timeline mt-2">
+          <div class="timeline-item completed"><div class="timeline-time">✅ Completed</div><div class="timeline-text">Aspirin 324mg PO — administered at 14:24</div></div>
+          <div class="timeline-item completed"><div class="timeline-time">✅ Completed</div><div class="timeline-text">12-Lead ECG — acquired and transmitted at 14:27</div></div>
+          <div class="timeline-item completed"><div class="timeline-time">✅ Completed</div><div class="timeline-text">Right-sided V4R — positive, RV involvement confirmed</div></div>
+          <div class="timeline-item completed"><div class="timeline-time">✅ Completed</div><div class="timeline-text">IV access established — 18ga L AC, NS TKO</div></div>
+          <div class="timeline-item active"><div class="timeline-time">⏳ In Progress</div><div class="timeline-text"><strong>Fluid bolus 500mL NS</strong> — for RV STEMI with hypotension (BP 88/54)</div></div>
+          <div class="timeline-item pending"><div class="timeline-time">⬜ Pending</div><div class="timeline-text">Consider Fentanyl 25-50mcg IV for pain management (pain 7/10)</div></div>
+          <div class="timeline-item pending"><div class="timeline-time">⚠️ HOLD</div><div class="timeline-text"><strong>NTG contraindicated</strong> — RV involvement with hypotension</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-comms" class="page-content hidden">
+      <div class="page-title">💬 Communications</div>
+      <div class="page-subtitle">Direct messaging with hospital receiving teams and dispatch</div>
+      <div class="card mt-2" style="min-height:300px;display:flex;align-items:center;justify-content:center;">
+        <div style="text-align:center;color:var(--text-muted);">
+          <div style="font-size:3rem;margin-bottom:8px;">💬</div>
+          <div>Real-time messaging interface</div>
+          <div class="text-sm">Connect with ER teams, dispatch, and medical control</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// === Clock ===
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// === Page Navigation ===
+function showPage(page) {
+  document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+  document.getElementById('page-' + page).classList.remove('hidden');
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+// === Answer Selection ===
+function selectAnswer(btn, type) {
+  const card = btn.closest('.question-card');
+  const buttons = card.querySelectorAll('.answer-btn');
+  buttons.forEach(b => b.className = 'answer-btn');
+  btn.classList.add('selected-' + type);
+  card.className = 'question-card';
+  if (type === 'abnormal') card.classList.add('abnormal');
+  else if (type === 'caution') card.classList.add('caution');
+  else card.classList.add('answered');
+}
+
+// === Notes Toggle ===
+function toggleNotes(el) {
+  const card = el.closest('.question-card');
+  let notes = card.querySelector('.notes-field');
+  if (notes) {
+    notes.remove();
+  } else {
+    notes = document.createElement('textarea');
+    notes.className = 'notes-field';
+    notes.placeholder = 'Additional clinical notes...';
+    card.appendChild(notes);
+    notes.focus();
+  }
+}
+
+// === ECG Canvas Drawing ===
+function drawECG() {
+  const canvas = document.getElementById('ecgCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  
+  ctx.fillStyle = '#080c12';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Grid
+  ctx.strokeStyle = '#0a1520';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < canvas.width; x += 20) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += 20) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+  
+  // Waveform
+  ctx.strokeStyle = '#00ff88';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const mid = canvas.height / 2;
+  const w = canvas.width;
+  
+  for (let x = 0; x < w; x++) {
+    const phase = (x / w) * Math.PI * 8;
+    let y = mid;
+    const cyclePos = (x % (w / 4)) / (w / 4);
+    
+    if (cyclePos > 0.15 && cyclePos < 0.18) y = mid - 8;
+    else if (cyclePos > 0.2 && cyclePos < 0.22) y = mid + 5;
+    else if (cyclePos > 0.22 && cyclePos < 0.24) y = mid - 45;
+    else if (cyclePos > 0.24 && cyclePos < 0.26) y = mid + 15;
+    else if (cyclePos > 0.3 && cyclePos < 0.4) y = mid - 15; // ST elevation
+    else if (cyclePos > 0.4 && cyclePos < 0.45) y = mid - 10;
+    else y += Math.sin(phase) * 2;
+    
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+// === 12-Lead Mini Canvases ===
+function drawLeadCanvases() {
+  const stemiLeads = ['II', 'III', 'aVF'];
+  document.querySelectorAll('.lead-canvas').forEach(canvas => {
+    const lead = canvas.dataset.lead;
+    const isStemi = stemiLeads.includes(lead);
+    canvas.width = canvas.offsetWidth;
+    canvas.height = 50;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.fillStyle = '#080c12';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = isStemi ? '#ef4444' : '#00ff88';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    
+    const mid = 25;
+    for (let x = 0; x < canvas.width; x++) {
+      const cyclePos = (x % (canvas.width / 3)) / (canvas.width / 3);
+      let y = mid;
+      if (cyclePos > 0.2 && cyclePos < 0.22) y = mid + 3;
+      else if (cyclePos > 0.22 && cyclePos < 0.24) y = mid - 20;
+      else if (cyclePos > 0.24 && cyclePos < 0.26) y = mid + 8;
+      else if (isStemi && cyclePos > 0.3 && cyclePos < 0.42) y = mid - 10;
+      else if (!isStemi && cyclePos > 0.3 && cyclePos < 0.38) y = mid - 4;
+      else y += Math.sin(x * 0.3) * 1;
+      
+      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+}
+
+// === HR Fluctuation ===
+setInterval(() => {
+  const hr = 110 + Math.floor(Math.random() * 6);
+  const el1 = document.getElementById('zoll-hr');
+  const el2 = document.getElementById('qv-hr');
+  if (el1) el1.textContent = hr;
+  if (el2) el2.textContent = hr;
+}, 3000);
+
+// === Call Timer ===
+let callSeconds = 750;
+setInterval(() => {
+  callSeconds++;
+  const m = Math.floor(callSeconds / 60);
+  const s = callSeconds % 60;
+  const el = document.getElementById('call-timer');
+  if (el) el.textContent = `00:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}, 1000);
+
+// === Init ===
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    drawECG();
+    drawLeadCanvases();
+  }, 100);
+});
+window.addEventListener('resize', () => {
+  drawECG();
+  drawLeadCanvases();
+});
+</script>
+</body>
+</html>

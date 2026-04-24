@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmergencyOS — Fire Operations</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Fire-specific overrides */
+        .fire-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-bottom: 3px solid #e74c3c; }
+        .fire-header .logo-icon { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+        /* ============ BUTTON NAVIGATION ============ */
+        .sidebar { padding: 10px 8px !important; }
+        .nav-section { margin-bottom: 6px; }
+        .nav-section-title {
+            padding: 6px 10px 4px;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #718096;
+            font-weight: 700;
+        }
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            min-height: 52px;
+            padding: 12px 14px;
+            margin-bottom: 4px;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.02);
+            color: #a0aec0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+        .nav-btn:hover {
+            background: rgba(231, 76, 60, 0.08);
+            border-color: rgba(231, 76, 60, 0.2);
+            color: #e2e8f0;
+            transform: translateX(2px);
+        }
+        .nav-btn:active {
+            transform: scale(0.97);
+            background: rgba(231, 76, 60, 0.15);
+        }
+        .nav-btn.active {
+            background: rgba(231, 76, 60, 0.12);
+            border-color: rgba(231, 76, 60, 0.35);
+            color: #e74c3c;
+            box-shadow: 0 0 12px rgba(231, 76, 60, 0.1), inset 0 0 0 1px rgba(231, 76, 60, 0.1);
+        }
+        .nav-btn .nav-icon {
+            font-size: 1.3rem;
+            width: 28px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .nav-btn .nav-label { flex: 1; }
+        .nav-btn .nav-badge {
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .nav-btn.link-btn {
+            min-height: 42px;
+            padding: 8px 14px;
+            font-size: 0.82rem;
+            border: 1px dashed rgba(255,255,255,0.08);
+            color: #718096;
+        }
+        .nav-btn.link-btn:hover {
+            background: rgba(0, 212, 255, 0.05);
+            border-color: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+        }
+
+        /* ============ WATER TANK GAUGE ============ */
+        .tank-gauge { position: relative; width: 120px; height: 200px; border: 3px solid #4a5568; border-radius: 12px; background: #1a1a2e; overflow: hidden; margin: 0 auto; }
+        .tank-water { position: absolute; bottom: 0; left: 0; right: 0; transition: height 1s ease; border-radius: 0 0 9px 9px; }
+        .tank-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.6rem; font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.8); z-index: 2; }
+        .tank-markings { position: absolute; top: 0; right: 8px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 0; z-index: 2; }
+        .tank-markings span { font-size: 0.6rem; color: #a0aec0; }
+        @keyframes pulse-tank { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Pump Status */
+        .pump-status-card { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .pump-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; text-align: center; }
+        .pump-item .pump-value { font-size: 1.5rem; font-weight: 800; color: #00d4ff; }
+        .pump-item .pump-label { font-size: 0.7rem; color: #a0aec0; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+        /* Hose line cards */
+        .hose-line-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #4a5568; }
+        .hose-line-card.flowing { border-left-color: #2ecc71; background: rgba(46,204,113,0.03); }
+        .hose-line-card.standby { border-left-color: #f39c12; }
+        .hose-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .hose-id { font-size: 1.1rem; font-weight: 800; color: #e2e8f0; }
+        .hose-status { font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+        .hose-status.flowing { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .hose-status.charged { background: rgba(243,156,18,0.15); color: #f39c12; }
+        .hose-specs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+        .hose-spec { text-align: center; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 10px; }
+        .hose-spec-value { font-size: 1.2rem; font-weight: 800; color: #00d4ff; }
+        .hose-spec-label { font-size: 0.7rem; color: #a0aec0; margin-top: 2px; }
+        .hose-assignment { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+        .hose-tag { font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 8px; background: rgba(0,212,255,0.08); color: #00d4ff; border: 1px solid rgba(0,212,255,0.15); }
+        .hose-tag.side { background: rgba(52,152,219,0.12); color: #3498db; border-color: rgba(52,152,219,0.25); }
+        .hose-tag.floor { background: rgba(155,89,182,0.12); color: #bb6bd9; border-color: rgba(155,89,182,0.25); }
+        .hose-tag.purpose { background: rgba(231,76,60,0.12); color: #e74c3c; border-color: rgba(231,76,60,0.25); }
+        .pdp-calc { padding: 14px; background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.1); border-radius: 10px; }
+        .pdp-calc-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.8rem; color: #a0aec0; }
+        .pdp-calc-row.total { border-top: 2px solid rgba(0,212,255,0.2); margin-top: 6px; padding-top: 8px; font-weight: 800; font-size: 1rem; color: #00d4ff; }
+
+        /* Water Timer */
+        .water-timer { text-align: center; padding: 20px; }
+        .water-timer-value { font-size: 4rem; font-weight: 900; font-family: 'Courier New', monospace; }
+        .water-timer-value.warning { color: #f39c12; }
+        .water-timer-value.critical { color: #e74c3c; animation: pulse-tank 1s infinite; }
+        .water-timer-value.good { color: #2ecc71; }
+        .water-timer-label { font-size: 0.8rem; color: #a0aec0; margin-top: 4px; }
+        .water-hydrant-status { margin-top: 12px; font-size: 0.85rem; font-weight: 700; padding: 8px 16px; border-radius: 10px; display: inline-block; }
+        .water-hydrant-status.not-connected { background: rgba(231,76,60,0.1); color: #e74c3c; border: 1px solid rgba(231,76,60,0.2); }
+        .water-hydrant-status.connected { background: rgba(46,204,113,0.1); color: #2ecc71; border: 1px solid rgba(46,204,113,0.2); }
+
+        /* Equipment Grid */
+        .equip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+        .equip-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.15s; }
+        .equip-item:hover { background: rgba(255,255,255,0.06); }
+        .equip-item.deployed { background: rgba(243,156,18,0.08); border-color: rgba(243,156,18,0.3); }
+        .equip-icon { font-size: 1.5rem; margin-bottom: 4px; }
+        .equip-name { font-size: 0.75rem; color: #a0aec0; }
+        .equip-count { font-size: 0.8rem; font-weight: 800; color: #e2e8f0; margin-top: 2px; }
+
+        /* Crew cards */
+        .crew-card { display: flex; align-items: center; gap: 14px; padding: 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; margin-bottom: 10px; }
+        .crew-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; color: #fff; flex-shrink: 0; }
+        .crew-avatar.officer { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .crew-avatar.engineer { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .crew-avatar.firefighter { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .crew-avatar.probie { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .crew-info { flex: 1; }
+        .crew-name { font-weight: 700; color: #e2e8f0; }
+        .crew-role { font-size: 0.75rem; color: #a0aec0; margin-top: 2px; }
+        .crew-assignment { font-size: 0.75rem; color: #718096; margin-top: 2px; }
+        .crew-status { text-align: right; min-width: 140px; }
+        .scba-bar { height: 8px; background: #2d3748; border-radius: 4px; margin-bottom: 4px; overflow: hidden; }
+        .scba-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+        .scba-fill.good { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+        .scba-fill.low { background: linear-gradient(90deg, #f39c12, #e67e22); }
+        .scba-fill.critical { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+        .scba-text { font-size: 0.65rem; color: #a0aec0; }
+        .crew-status-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 8px; display: inline-block; margin-top: 4px; }
+        .crew-status-badge.working { background: rgba(243,156,18,0.15); color: #f39c12; }
+        .crew-status-badge.accounted { background: rgba(46,204,113,0.15); color: #2ecc71; }
+
+        /* PAR Controls */
+        .par-controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .par-btn { padding: 14px 24px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
+        .par-btn.all-accounted { background: rgba(46,204,113,0.15); color: #2ecc71; border: 2px solid rgba(46,204,113,0.3); }
+        .par-btn.all-accounted:hover { background: rgba(46,204,113,0.25); }
+        .par-btn.mayday-btn { background: rgba(231,76,60,0.15); color: #e74c3c; border: 2px solid rgba(231,76,60,0.3); }
+        .par-btn.mayday-btn:hover { background: rgba(231,76,60,0.3); }
+
+        /* Orders */
+        .order-item { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid #f1c40f; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .order-item.acknowledged { opacity: 0.6; border-left-color: #2ecc71; }
+        .order-time { font-size: 0.7rem; color: #718096; font-family: 'Courier New', monospace; }
+        .order-from { font-size: 0.85rem; font-weight: 700; color: #f1c40f; margin-top: 4px; }
+        .order-text { font-size: 0.9rem; color: #e2e8f0; margin-top: 6px; line-height: 1.5; }
+        .order-ack { margin-top: 10px; }
+        .order-ack-btn { padding: 10px 20px; background: rgba(46,204,113,0.12); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem; font-family: inherit; transition: all 0.15s; }
+        .order-ack-btn:hover { background: rgba(46,204,113,0.25); }
+        .order-acked-tag { font-size: 0.8rem; color: #2ecc71; font-weight: 600; }
+
+        /* Hydrant map */
+        .hydrant-map { position: relative; width: 100%; height: 400px; background: #0f1923; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; margin-bottom: 12px; }
+        .hydrant-map-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 40px 40px; }
+        .incident-marker { position: absolute; font-size: 2rem; transform: translate(-50%, -50%); z-index: 3; filter: drop-shadow(0 0 8px rgba(231,76,60,0.6)); animation: pulse-tank 2s infinite; }
+        .hydrant-pin { position: absolute; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 800; color: #fff; transform: translate(-50%, -50%); z-index: 2; cursor: pointer; border: 2px solid rgba(255,255,255,0.3); transition: all 0.2s; }
+        .hydrant-pin:hover { transform: translate(-50%, -50%) scale(1.3); z-index: 5; }
+        .hydrant-pin.class-aa { background: #2980b9; }
+        .hydrant-pin.class-a { background: #27ae60; }
+        .hydrant-pin.class-b { background: #e67e22; }
+        .hydrant-pin.class-c { background: #e74c3c; }
+        .hydrant-pin.in-use { border-color: #f1c40f; box-shadow: 0 0 10px rgba(241,196,15,0.5); }
+        .hydrant-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #a0aec0; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+        /* Timeline */
+        .timeline { position: relative; padding-left: 20px; border-left: 2px solid rgba(255,255,255,0.08); }
+        .timeline-item { position: relative; padding: 8px 0 16px 16px; }
+        .timeline-item::before { content: ''; position: absolute; left: -26px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: #4a5568; border: 2px solid #2d3748; }
+        .timeline-time { font-size: 0.7rem; color: #718096; font-family: 'Courier New', monospace; }
+        .timeline-content { font-size: 0.85rem; color: #a0aec0; margin-top: 4px; }
+
+        /* Apparatus card */
+        .apparatus-card { display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px 20px; }
+        .apparatus-icon { font-size: 2.5rem; }
+        .apparatus-name { font-size: 1.3rem; font-weight: 900; color: #e2e8f0; }
+        .apparatus-type { font-size: 0.85rem; color: #a0aec0; }
+        .apparatus-meta { font-size: 0.75rem; color: #718096; margin-top: 2px; }
+        .apparatus-status-badge { padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.8rem; margin-left: auto; }
+        .apparatus-status-badge.on-scene { background: rgba(46,204,113,0.12); color: #2ecc71; border: 1px solid rgba(46,204,113,0.25); }
+
+        /* Toast */
+        .toast { position: fixed; top: 20px; right: 20px; background: #2ecc71; color: #fff; padding: 14px 24px; border-radius: 12px; font-weight: 700; font-size: 0.9rem; z-index: 9999; opacity: 0; transform: translateY(-20px); transition: all 0.3s; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { background: #e74c3c; }
+        .toast.warning { background: #f39c12; }
+
+        /* Form elements for production mode */
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 120px; }
+        .form-group label { display: block; font-size: 0.72rem; color: #a0aec0; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .form-control { width: 100%; padding: 10px 12px; background: #1a1a2e; color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; font-size: 0.88rem; font-family: inherit; box-sizing: border-box; }
+        .form-control:focus { outline: none; border-color: #e74c3c; box-shadow: 0 0 0 2px rgba(231,76,60,0.2); }
+        .btn { padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; font-family: inherit; font-size: 0.85rem; transition: all 0.15s; }
+        .btn-primary { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+        .btn-primary:hover { background: rgba(231,76,60,0.25); }
+        .btn-success { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+        .btn-success:hover { background: rgba(46,204,113,0.25); }
+        .btn-blue { background: rgba(0,212,255,0.12); color: #00d4ff; border: 1px solid rgba(0,212,255,0.25); }
+        .btn-blue:hover { background: rgba(0,212,255,0.22); }
+        .btn-warning { background: rgba(243,156,18,0.15); color: #f39c12; border: 1px solid rgba(243,156,18,0.3); }
+        .btn-warning:hover { background: rgba(243,156,18,0.25); }
+        .btn-danger { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
+        .btn-danger:hover { background: rgba(231,76,60,0.3); }
+        .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+        .msg-input-row { display: flex; gap: 8px; margin-top: 12px; }
+        .msg-input-row input { flex: 1; }
+    </style>
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <div class="app-layout">
+    <!-- Header -->
+    <header class="header fire-header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">&#128293;</div>
+                <div class="logo-text">
+                    <span class="logo-title">EmergencyOS</span>
+                    <span class="logo-subtitle">FIRE OPS</span>
+                </div>
+            </div>
+        </div>
+        <div class="call-banner active">
+            <span class="call-banner-text" id="callBanner">STRUCTURE FIRE — 2ND ALARM — 742 Oakwood Drive — Box 47-12</span>
+            <span class="call-timer" id="callTimer">00:18:42</span>
+        </div>
+        <div class="header-right">
+            <span id="clock" style="color:#a0aec0;font-family:'Courier New',monospace;font-size:0.9rem;"></span>
+            <div class="user-badge">
+                <div class="user-avatar" style="background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;">LR</div>
+                <div>
+                    <div style="font-weight:700;font-size:0.85rem;">Lt. Rodriguez</div>
+                    <div style="font-size:0.65rem;color:#e74c3c;">Engine 7 — Officer</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar with BUTTON Navigation -->
+    <nav class="sidebar">
+        <div class="nav-section">
+            <div class="nav-section-title">APPARATUS</div>
+            <button class="nav-btn active" data-page="dashboard">
+                <span class="nav-icon">&#128202;</span>
+                <span class="nav-label">Dashboard</span>
+            </button>
+            <button class="nav-btn" data-page="equipment">
+                <span class="nav-icon">&#129520;</span>
+                <span class="nav-label">Equipment & Water</span>
+            </button>
+            <button class="nav-btn" data-page="par">
+                <span class="nav-icon">&#128101;</span>
+                <span class="nav-label">PAR / Crew</span>
+                <span class="nav-badge" id="parBadge" style="background:#2ecc71;">4/4</span>
+            </button>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">OPERATIONS</div>
+            <button class="nav-btn" data-page="hoselines">
+                <span class="nav-icon">&#128293;</span>
+                <span class="nav-label">Hose Lines</span>
+                <span class="nav-badge" id="hosesBadge" style="background:#e74c3c;">0</span>
+            </button>
+            <button class="nav-btn" data-page="watersupply">
+                <span class="nav-icon">&#128167;</span>
+                <span class="nav-label">Water Supply</span>
+            </button>
+            <button class="nav-btn" data-page="hydrants">
+                <span class="nav-icon">&#128703;</span>
+                <span class="nav-label">Hydrant Map</span>
+            </button>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">COMMAND</div>
+            <button class="nav-btn" data-page="orders">
+                <span class="nav-icon">&#128203;</span>
+                <span class="nav-label">Orders from IC</span>
+                <span class="nav-badge" id="ordersBadge" style="background:#e74c3c;">0</span>
+            </button>
+            <button class="nav-btn" data-page="comms">
+                <span class="nav-icon">&#128225;</span>
+                <span class="nav-label">Communications</span>
+            </button>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">LINKS</div>
+            <a href="index.html" class="nav-btn link-btn" style="text-decoration:none;">
+                <span class="nav-icon">&#127968;</span>
+                <span class="nav-label">Main Hub</span>
+            </a>
+            <a href="ems.html" class="nav-btn link-btn" style="text-decoration:none;">
+                <span class="nav-icon">&#128657;</span>
+                <span class="nav-label">EMS Ops</span>
+            </a>
+            <a href="command.html" class="nav-btn link-btn" style="text-decoration:none;">
+                <span class="nav-icon">&#11088;</span>
+                <span class="nav-label">Command</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- ==================== DASHBOARD ==================== -->
+        <div id="page-dashboard" class="page active">
+            <div class="apparatus-card" style="margin-bottom:20px;">
+                <div class="apparatus-icon">&#128674;</div>
+                <div>
+                    <div class="apparatus-name" id="dashApparatusName">Engine 7</div>
+                    <div class="apparatus-type" id="dashApparatusType">Type 1 Engine — 750 gal / 1,500 GPM Pump</div>
+                    <div class="apparatus-meta" id="dashApparatusMeta">Station 7 &#8226; OIC: Lt. Rodriguez &#8226; Crew: 4</div>
+                </div>
+                <div class="apparatus-status-badge on-scene">&#128994; ON SCENE</div>
+            </div>
+
+            <div class="grid grid-4" style="margin-bottom:20px;">
+                <div class="card">
+                    <div class="card-header"><h3>&#128167; Water Tank</h3></div>
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:2.5rem;font-weight:900;" id="dashTankGal">—</div>
+                        <div style="font-size:0.8rem;color:#a0aec0;" id="dashTankOf">of — gallons</div>
+                        <div style="height:8px;background:#2d3748;border-radius:4px;margin-top:10px;">
+                            <div id="dashTankBar" style="width:0%;height:100%;border-radius:4px;transition:width 0.5s;"></div>
+                        </div>
+                        <div style="font-size:0.75rem;margin-top:6px;font-weight:700;" id="dashTankPct">—</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>&#9881;&#65039; Pump Status</h3></div>
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:2.5rem;font-weight:900;" id="dashPumpStatus">OFF</div>
+                        <div style="font-size:0.8rem;color:#a0aec0;" id="dashPumpSource">—</div>
+                        <div style="font-size:1.2rem;font-weight:700;color:#00d4ff;margin-top:8px;" id="dashTotalGPM">0 GPM Total</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>&#128293; Active Lines</h3></div>
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:2.5rem;font-weight:900;color:#e74c3c;" id="dashLineCount">0</div>
+                        <div style="font-size:0.8rem;color:#a0aec0;">Lines Deployed</div>
+                        <div id="dashLineSummary" style="margin-top:8px;"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>&#128101; PAR Status</h3></div>
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:2.5rem;font-weight:900;" id="dashPARCount">—</div>
+                        <div style="font-size:0.8rem;color:#a0aec0;" id="dashPARLabel">—</div>
+                        <div style="font-size:0.75rem;margin-top:8px;font-weight:600;" id="dashPARTime">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Assignment + Overview -->
+            <div class="grid grid-2">
+                <div class="card">
+                    <div class="card-header"><h3>&#128203; Current Assignment from Command</h3></div>
+                    <div class="card-body" id="dashOrdersContainer">
+                        <div style="color:#718096;text-align:center;padding:20px;">No orders received yet. Awaiting assignment from IC.</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>&#128202; Incident Overview</h3></div>
+                    <div class="card-body">
+                        <table class="data-table">
+                            <tbody>
+                                <tr><td style="color:#a0aec0;">Incident</td><td style="font-weight:700;" id="incidentType">—</td></tr>
+                                <tr><td style="color:#a0aec0;">Address</td><td style="font-weight:700;" id="incidentAddr">—</td></tr>
+                                <tr><td style="color:#a0aec0;">Construction</td><td style="font-weight:700;" id="incidentConst">—</td></tr>
+                                <tr><td style="color:#a0aec0;">IC</td><td style="font-weight:700;" id="incidentIC">—</td></tr>
+                                <tr><td style="color:#a0aec0;">Alarm</td><td style="font-weight:700;" id="incidentAlarm">—</td></tr>
+                                <tr><td style="color:#a0aec0;">Conditions</td><td id="incidentConditions">—</td></tr>
+                            </tbody>
+                        </table>
+                        <!-- Edit Incident Info -->
+                        <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);">
+                            <button class="btn btn-blue btn-sm" onclick="toggleIncidentEdit()">&#9998; Edit Incident Info</button>
+                            <div id="incidentEditForm" style="display:none;margin-top:12px;">
+                                <div class="form-row">
+                                    <div class="form-group"><label>Incident Type</label><input class="form-control" id="editIncType" placeholder="Structure Fire — 2nd Alarm"></div>
+                                    <div class="form-group"><label>Address</label><input class="form-control" id="editIncAddr" placeholder="742 Oakwood Drive"></div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group"><label>Construction</label><input class="form-control" id="editIncConst" placeholder="Type V — Wood Frame"></div>
+                                    <div class="form-group"><label>IC</label><input class="form-control" id="editIncIC" placeholder="Chief Williams (BC-2)"></div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group"><label>Alarm Level</label><input class="form-control" id="editIncAlarm" placeholder="2nd Alarm"></div>
+                                    <div class="form-group"><label>Conditions</label><input class="form-control" id="editIncCond" placeholder="Heavy fire A/B corner"></div>
+                                </div>
+                                <button class="btn btn-success" onclick="saveIncidentInfo()">&#10003; Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== EQUIPMENT & WATER ==================== -->
+        <div id="page-equipment" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">&#129520; Equipment & Water Load</h2>
+
+            <div class="grid grid-2">
+                <!-- Water Tank Controls -->
+                <div class="card">
+                    <div class="card-header"><h3>&#128167; Water Tank</h3></div>
+                    <div class="card-body" style="display:flex;gap:30px;align-items:flex-start;">
+                        <div>
+                            <div class="tank-gauge">
+                                <div class="tank-water" id="tankWaterFill" style="height:0%;background:linear-gradient(to top,#2980b9,#3498db,#5dade2);"></div>
+                                <div class="tank-label" id="tankWaterPct">—</div>
+                                <div class="tank-markings" id="tankMarkings"></div>
+                            </div>
+                            <div style="text-align:center;margin-top:10px;">
+                                <div style="font-size:1.8rem;font-weight:900;" id="tankGalDisplay">—</div>
+                                <div style="font-size:0.75rem;color:#a0aec0;" id="tankCapDisplay">of — gal</div>
+                            </div>
+                        </div>
+                        <div style="flex:1;">
+                            <div class="pump-status-card">
+                                <div class="pump-item"><div class="pump-value" id="eqPumpStat">—</div><div class="pump-label">Pump Status</div></div>
+                                <div class="pump-item"><div class="pump-value" id="eqIntakeSrc">—</div><div class="pump-label">Intake Source</div></div>
+                                <div class="pump-item"><div class="pump-value" id="eqTotalGPM">—</div><div class="pump-label">Total GPM</div></div>
+                                <div class="pump-item"><div class="pump-value" id="eqIntakePSI">—</div><div class="pump-label">Intake PSI</div></div>
+                                <div class="pump-item"><div class="pump-value" id="eqTimeEmpty">—</div><div class="pump-label">Time to Empty</div></div>
+                                <div class="pump-item"><div class="pump-value" id="eqHydrantConn">—</div><div class="pump-label">Hydrant Conn.</div></div>
+                            </div>
+                            <!-- Tank/Pump Edit Controls -->
+                            <div style="margin-top:14px;padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
+                                <div style="font-size:0.8rem;font-weight:700;color:#e2e8f0;margin-bottom:10px;">&#9881; Adjust Tank & Pump</div>
+                                <div class="form-row">
+                                    <div class="form-group"><label>Tank Capacity (gal)</label><input class="form-control" type="number" id="editTankCap" value="750"></div>
+                                    <div class="form-group"><label>Current Level (gal)</label><input class="form-control" type="number" id="editTankLevel" value="750"></div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group"><label>Pump Status</label>
+                                        <select class="form-control" id="editPumpStatus">
+                                            <option value="OFF">OFF</option>
+                                            <option value="ENGAGED">ENGAGED</option>
+                                            <option value="IDLE">IDLE</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group"><label>Source</label>
+                                        <select class="form-control" id="editPumpSource">
+                                            <option value="TANK">TANK</option>
+                                            <option value="HYDRANT">HYDRANT</option>
+                                            <option value="RELAY">RELAY</option>
+                                            <option value="DRAFT">DRAFT</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary" onclick="saveTankPump()">&#128190; Update Tank & Pump</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hose Load Inventory -->
+                <div class="card">
+                    <div class="card-header"><h3>&#129519; Hose Load</h3></div>
+                    <div class="card-body">
+                        <table class="data-table">
+                            <thead><tr><th>Diameter</th><th>Total (ft)</th><th>Deployed</th><th>Available</th><th>FL Coeff.</th></tr></thead>
+                            <tbody id="hoseLoadTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipment Inventory -->
+            <div class="card" style="margin-top:16px;">
+                <div class="card-header">
+                    <h3>&#128736;&#65039; Equipment Inventory</h3>
+                    <button class="btn btn-blue btn-sm" onclick="toggleAddEquipment()">+ Add Item</button>
+                </div>
+                <div id="addEquipForm" style="display:none;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <div class="form-row">
+                        <div class="form-group"><label>Name</label><input class="form-control" id="newEquipName" placeholder="Item name"></div>
+                        <div class="form-group"><label>Count</label><input class="form-control" id="newEquipCount" placeholder="1"></div>
+                        <div class="form-group"><label>Icon</label><input class="form-control" id="newEquipIcon" placeholder="&#128295;" value="&#128295;"></div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn btn-success" onclick="addEquipment()">Add</button></div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="equip-grid" id="equipGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAR / CREW ==================== -->
+        <div id="page-par" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">&#128101; Personnel Accountability</h2>
+
+            <div id="parBanner" style="border-radius:14px;padding:16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;"></div>
+
+            <div class="par-controls">
+                <button class="par-btn all-accounted" onclick="submitPAR()">&#9989; ALL ACCOUNTED — Submit PAR</button>
+                <button class="par-btn" style="background:rgba(243,156,18,0.15);color:#f39c12;border:1px solid rgba(243,156,18,0.3);" onclick="requestIndividualCheck()">&#128260; Request Individual Check</button>
+                <button class="par-btn mayday-btn" onclick="sendMayday()">&#127384; MAYDAY</button>
+            </div>
+
+            <!-- Add Crew Member -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header">
+                    <h3>&#128100; Add Crew Member</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group"><label>Full Name</label><input class="form-control" id="newCrewName" placeholder="FF. John Doe"></div>
+                        <div class="form-group"><label>Role</label>
+                            <select class="form-control" id="newCrewRole">
+                                <option value="officer">Officer / OIC</option>
+                                <option value="engineer">Driver / Engineer</option>
+                                <option value="firefighter" selected>Firefighter</option>
+                                <option value="probie">Probationary FF</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Assignment</label><input class="form-control" id="newCrewAssign" placeholder="Interior — A-side"></div>
+                        <div class="form-group"><label>SCBA PSI</label><input class="form-control" type="number" id="newCrewSCBA" value="4500"></div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn btn-success" onclick="addCrewMember()">+ Add</button></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Crew Roster -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header"><h3>&#128674; Crew Roster</h3></div>
+                <div class="card-body" id="crewRoster"></div>
+            </div>
+
+            <!-- PAR History -->
+            <div class="card">
+                <div class="card-header"><h3>&#128203; PAR History</h3></div>
+                <div class="card-body">
+                    <table class="data-table">
+                        <thead><tr><th>Time</th><th>Requested By</th><th>Result</th><th>Response Time</th></tr></thead>
+                        <tbody id="parHistoryTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== HOSE LINES ==================== -->
+        <div id="page-hoselines" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">&#128293; Active Hose Lines</h2>
+
+            <!-- Add Hose Line Form -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header"><h3>&#10133; Deploy New Hose Line</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group"><label>Line Name</label><input class="form-control" id="newLineName" placeholder="Line 1 — Attack"></div>
+                        <div class="form-group"><label>Diameter</label>
+                            <select class="form-control" id="newLineDiam">
+                                <option value="1.75" data-coeff="15.5">1&frac34;" (C=15.5)</option>
+                                <option value="2.0" data-coeff="8.0">2" (C=8.0)</option>
+                                <option value="2.5" data-coeff="2.0">2&frac12;" (C=2.0)</option>
+                                <option value="3.0" data-coeff="0.8">3" (C=0.8)</option>
+                                <option value="5.0" data-coeff="0.08">5" LDH (C=0.08)</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Length (ft)</label><input class="form-control" type="number" id="newLineLen" value="200"></div>
+                        <div class="form-group"><label>Flow GPM</label><input class="form-control" type="number" id="newLineGPM" value="185"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Nozzle PSI</label><input class="form-control" type="number" id="newLineNP" value="50"></div>
+                        <div class="form-group"><label>Floors Above</label><input class="form-control" type="number" id="newLineFloors" value="0"></div>
+                        <div class="form-group"><label>Appliances (#)</label><input class="form-control" type="number" id="newLineAppl" value="0"></div>
+                        <div class="form-group"><label>Purpose</label>
+                            <select class="form-control" id="newLinePurpose">
+                                <option>FIRE ATTACK</option>
+                                <option>BACKUP</option>
+                                <option>EXPOSURE</option>
+                                <option>SUPPLY</option>
+                                <option>STANDPIPE</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Building Side</label>
+                            <select class="form-control" id="newLineSide">
+                                <option>A-SIDE</option><option>B-SIDE</option><option>C-SIDE</option><option>D-SIDE</option><option>INTERIOR</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Floor</label><input class="form-control" id="newLineFloor" placeholder="1ST FLOOR"></div>
+                        <div class="form-group"><label>Status</label>
+                            <select class="form-control" id="newLineStatus">
+                                <option value="flowing">Flowing</option>
+                                <option value="charged">Charged (Standby)</option>
+                                <option value="dry">Dry (Not Charged)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;">
+                            <button class="btn btn-primary" onclick="addHoseLine()">&#128293; Deploy Line</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Lines Container -->
+            <div id="hoseLinesContainer"></div>
+
+            <!-- PDP Calculator -->
+            <div class="card" style="margin-top:16px;">
+                <div class="card-header"><h3>&#129518; Quick PDP Calculator</h3></div>
+                <div class="card-body">
+                    <div class="grid grid-3" style="gap:12px;">
+                        <div><label style="font-size:0.75rem;color:#a0aec0;display:block;margin-bottom:6px;">Hose Diameter</label>
+                            <select id="calcDiam" class="form-control" onchange="calcPDP()">
+                                <option value="15.5">1&frac34;" (C=15.5)</option><option value="8.0">2" (C=8.0)</option><option value="2.0">2&frac12;" (C=2.0)</option><option value="0.8">3" (C=0.8)</option><option value="0.2">4" (C=0.2)</option><option value="0.08">5" LDH (C=0.08)</option>
+                            </select></div>
+                        <div><label style="font-size:0.75rem;color:#a0aec0;display:block;margin-bottom:6px;">Length (ft)</label><input type="number" id="calcLen" value="200" class="form-control" oninput="calcPDP()"></div>
+                        <div><label style="font-size:0.75rem;color:#a0aec0;display:block;margin-bottom:6px;">Flow (GPM)</label><input type="number" id="calcGPM" value="185" class="form-control" oninput="calcPDP()"></div>
+                        <div><label style="font-size:0.75rem;color:#a0aec0;display:block;margin-bottom:6px;">Nozzle Pressure (PSI)</label><input type="number" id="calcNP" value="50" class="form-control" oninput="calcPDP()"></div>
+                        <div><label style="font-size:0.75rem;color:#a0aec0;display:block;margin-bottom:6px;">Floors Above Grade</label><input type="number" id="calcFloors" value="0" class="form-control" oninput="calcPDP()"></div>
+                        <div><label style="font-size:0.75rem;color:#a0aec0;display:block;margin-bottom:6px;">Appliances (#)</label><input type="number" id="calcAppl" value="0" class="form-control" oninput="calcPDP()"></div>
+                    </div>
+                    <div style="margin-top:16px;padding:16px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:12px;text-align:center;">
+                        <div style="font-size:0.8rem;color:#a0aec0;">Required Pump Discharge Pressure</div>
+                        <div style="font-size:2.5rem;font-weight:900;color:#00d4ff;" id="calcPDPResult">— PSI</div>
+                        <div style="font-size:0.75rem;color:#a0aec0;margin-top:4px;" id="calcBreakdown">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== WATER SUPPLY ==================== -->
+        <div id="page-watersupply" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">&#128167; Water Supply</h2>
+            <div class="grid grid-2">
+                <div class="card">
+                    <div class="card-header"><h3>&#9201;&#65039; Time to Empty</h3></div>
+                    <div class="card-body">
+                        <div class="water-timer">
+                            <div class="water-timer-value" id="waterTimerDisplay">--:--</div>
+                            <div class="water-timer-label">Minutes : Seconds until tank is empty</div>
+                            <div id="waterHydrantStatus" class="water-hydrant-status not-connected">&#128308; NOT CONNECTED TO HYDRANT</div>
+                        </div>
+                        <div id="waterWarning" style="margin-top:16px;padding:12px;background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.2);border-radius:10px;display:none;">
+                            <div style="font-size:0.85rem;color:#e74c3c;font-weight:700;">&#9888;&#65039; CRITICAL: Establish water supply immediately</div>
+                            <div style="font-size:0.75rem;color:#a0aec0;margin-top:4px;" id="waterWarningText"></div>
+                        </div>
+                        <div style="margin-top:16px;">
+                            <button class="btn btn-success" id="hydrantToggleBtn" onclick="toggleHydrant()">&#128165; Connect to Hydrant</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>&#128202; Flow Summary</h3></div>
+                    <div class="card-body">
+                        <table class="data-table">
+                            <thead><tr><th>Line</th><th>Diameter</th><th>GPM</th><th>Status</th></tr></thead>
+                            <tbody id="flowSummaryTable"></tbody>
+                            <tfoot>
+                                <tr style="border-top:2px solid rgba(255,255,255,0.1);">
+                                    <td colspan="2" style="font-weight:800;color:#e2e8f0;">TOTAL FLOW</td>
+                                    <td style="font-weight:900;color:#00d4ff;font-size:1.1rem;" id="totalFlowGPM">0 GPM</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div style="margin-top:16px;padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
+                            <div style="font-size:0.8rem;font-weight:700;color:#e2e8f0;margin-bottom:8px;">Calculation</div>
+                            <div style="font-size:0.8rem;color:#a0aec0;" id="waterCalcDetail">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" style="margin-top:16px;">
+                <div class="card-header"><h3>&#128201; Tank Level Over Time</h3></div>
+                <div class="card-body">
+                    <canvas id="tankChart" width="800" height="200" style="width:100%;height:200px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== HYDRANT MAP ==================== -->
+        <div id="page-hydrants" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">&#128703; Hydrant Map</h2>
+
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header">
+                    <h3>&#10133; Add Hydrant</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group"><label>Hydrant ID</label><input class="form-control" id="newHydID" placeholder="HYD-0001"></div>
+                        <div class="form-group"><label>Location</label><input class="form-control" id="newHydLoc" placeholder="Oakwood & Elm"></div>
+                        <div class="form-group"><label>Class</label>
+                            <select class="form-control" id="newHydClass">
+                                <option value="AA">AA (1,500+ GPM)</option><option value="A">A (1,000-1,499)</option><option value="B">B (500-999)</option><option value="C">C (<500)</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Flow GPM</label><input class="form-control" type="number" id="newHydGPM" value="1200"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Static PSI</label><input class="form-control" type="number" id="newHydPSI" value="65"></div>
+                        <div class="form-group"><label>Distance (ft)</label><input class="form-control" type="number" id="newHydDist" value="200"></div>
+                        <div class="form-group"><label>Status</label>
+                            <select class="form-control" id="newHydStatus">
+                                <option value="Available">Available</option><option value="In Use">In Use</option><option value="Out of Service">Out of Service</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn btn-success" onclick="addHydrant()">+ Add Hydrant</button></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3>&#128203; Hydrant Details</h3></div>
+                <div class="card-body">
+                    <table class="data-table">
+                        <thead><tr><th>ID</th><th>Location</th><th>Class</th><th>Flow (GPM)</th><th>Static PSI</th><th>Distance</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody id="hydrantTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="hydrant-legend" style="margin-top:10px;">
+                <div class="legend-item"><div class="legend-dot" style="background:#2980b9;"></div> Class AA (1,500+ GPM)</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#27ae60;"></div> Class A (1,000-1,499)</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#e67e22;"></div> Class B (500-999)</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;"></div> Class C (<500)</div>
+            </div>
+        </div>
+
+        <!-- ==================== ORDERS FROM IC ==================== -->
+        <div id="page-orders" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">&#128203; Orders from Incident Command</h2>
+            <div id="ordersContainer"></div>
+            <div style="text-align:center;padding:20px;color:#718096;" id="noOrdersMsg">No orders received yet.</div>
+        </div>
+
+        <!-- ==================== COMMUNICATIONS ==================== -->
+        <div id="page-comms" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">&#128225; Communications Log</h2>
+
+            <div class="card">
+                <div class="card-header"><h3>&#128251; Radio & App Communications</h3></div>
+                <div class="card-body">
+                    <div class="msg-input-row">
+                        <select class="form-control" id="commsSender" style="max-width:180px;">
+                            <option>Engine 7 &#8594; IC</option>
+                            <option>Engine 7 &#8594; Dispatch</option>
+                            <option>Engine 7 &#8594; All Units</option>
+                        </select>
+                        <input class="form-control" id="commsMsg" placeholder="Type message..." onkeydown="if(event.key==='Enter')sendComms()">
+                        <button class="btn btn-primary" onclick="sendComms()">Send</button>
+                    </div>
+                    <div class="timeline" id="commsTimeline" style="margin-top:20px;"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+    </div><!-- /app-layout -->
+
+    <!-- ==================== JAVASCRIPT — PRODUCTION MODE ==================== -->
+    <script>
+    (function() {
+        'use strict';
+
+        // ===================== STATE MANAGEMENT =====================
+        const STORAGE_KEY = 'emergencyos_fire_state';
+        const MAX_SCBA = 4500;
+
+        function getDefaultState() {
+            return {
+                apparatus: { name: 'Engine 7', type: 'Type 1 Engine', tankCapacity: 750, pumpGPM: 1500, station: 'Station 7' },
+                incident: { type: '', address: '', construction: '', ic: '', alarm: '', conditions: '' },
+                tank: { capacity: 750, currentLevel: 750, pumpStatus: 'OFF', source: 'TANK', hydrantConnected: false },
+                crew: [],
+                hoseLines: [],
+                equipment: [
+                    { name: "24' Extension", icon: "\u{1FA9C}", count: "1", deployed: false },
+                    { name: "14' Roof", icon: "\u{1FA9C}", count: "1", deployed: false },
+                    { name: "12' Folding", icon: "\u{1FA9C}", count: "1", deployed: false },
+                    { name: "Irons Set", icon: "\u{1FA93}", count: "2 sets", deployed: false },
+                    { name: "Pike Poles", icon: "\u{1F527}", count: "3", deployed: false },
+                    { name: "TIC Camera", icon: "\u{1F4F7}", count: "1", deployed: false },
+                    { name: "K-Tool / A-Tool", icon: "\u{1F511}", count: "1 each", deployed: false },
+                    { name: "Chain Saw", icon: "\u26A1", count: "1", deployed: false },
+                    { name: "Rotary Saw", icon: "\u26A1", count: "1", deployed: false },
+                    { name: "SCBA Spares", icon: "\u{1F392}", count: "2 cyl", deployed: false },
+                    { name: "Gated Wye", icon: "\u{1F500}", count: "1", deployed: false },
+                    { name: "Siamese", icon: "\u{1F517}", count: "1", deployed: false },
+                    { name: "Standpipe Kit", icon: "\u{1F6BF}", count: "1", deployed: false },
+                    { name: "Portable Lights", icon: "\u{1F4A1}", count: "2", deployed: false },
+                    { name: "Nozzles (Fog)", icon: "\u{1F3AF}", count: "3", deployed: false },
+                    { name: "Smooth Bore Tips", icon: "\u26AB", count: '15/16", 1\u215B"', deployed: false }
+                ],
+                hoseLoad: [
+                    { diam: '1\u00BE" Attack', total: 600, deployed: 0, coeff: 15.5 },
+                    { diam: '2\u00BD" Supply', total: 400, deployed: 0, coeff: 2.0 },
+                    { diam: '3" Supply', total: 300, deployed: 0, coeff: 0.8 },
+                    { diam: '5" LDH', total: 1000, deployed: 0, coeff: 0.08 }
+                ],
+                hydrants: [],
+                orders: [],
+                comms: [],
+                parHistory: [],
+                tankHistory: [],
+                lastPAR: null
+            };
+        }
+
+        let STATE = loadState();
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) return JSON.parse(saved);
+            } catch(e) {}
+            return getDefaultState();
+        }
+
+        function saveState() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); } catch(e) {}
+        }
+
+        // ===================== TOAST =====================
+        window.showToast = function(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + (type || '') + ' show';
+            setTimeout(() => t.className = 'toast', 3000);
+        };
+
+        // ===================== CLOCK & TIMER =====================
+        function updateClock() {
+            const el = document.getElementById('clock');
+            if (el) el.textContent = new Date().toLocaleTimeString('en-US', {hour12:false});
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        let callSeconds = 18 * 60 + 42;
+        function updateCallTimer() {
+            callSeconds++;
+            const h = Math.floor(callSeconds / 3600);
+            const m = Math.floor((callSeconds % 3600) / 60);
+            const s = callSeconds % 60;
+            const el = document.getElementById('callTimer');
+            if (el) el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        }
+        setInterval(updateCallTimer, 1000);
+
+        // ===================== NAVIGATION =====================
+        window.showPage = function(pageId, btn) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn:not(.link-btn)').forEach(n => n.classList.remove('active'));
+            const page = document.getElementById('page-' + pageId);
+            if (page) page.classList.add('active');
+            if (btn) {
+                var target = btn.closest ? btn.closest('.nav-btn') : btn;
+                if (target) target.classList.add('active');
+            }
+            renderAll();
+        };
+
+        // Attach click listeners to nav buttons
+        document.querySelectorAll('.nav-btn[data-page]').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage(this.getAttribute('data-page'), this);
+            });
+        });
+
+        // ===================== RENDER FUNCTIONS =====================
+        function renderAll() {
+            renderDashboard();
+            renderEquipment();
+            renderPAR();
+            renderHoseLines();
+            renderWaterSupply();
+            renderHydrants();
+            renderOrders();
+            renderComms();
+            updateBadges();
+        }
+
+        // -- Dashboard --
+        function renderDashboard() {
+            const s = STATE;
+            const pct = s.tank.capacity > 0 ? Math.round((s.tank.currentLevel / s.tank.capacity) * 100) : 0;
+            const color = pct > 50 ? '#2ecc71' : pct > 25 ? '#f39c12' : '#e74c3c';
+            const totalGPM = getTotalFlowingGPM();
+            const timeEmpty = totalGPM > 0 && !s.tank.hydrantConnected ? s.tank.currentLevel / totalGPM : null;
+
+            // Tank
+            const dg = document.getElementById('dashTankGal');
+            if (dg) { dg.textContent = s.tank.currentLevel; dg.style.color = color; }
+            const dto = document.getElementById('dashTankOf');
+            if (dto) dto.textContent = 'of ' + s.tank.capacity + ' gallons';
+            const dtb = document.getElementById('dashTankBar');
+            if (dtb) { dtb.style.width = pct + '%'; dtb.style.background = 'linear-gradient(90deg,' + color + ',' + color + ')'; }
+            const dtp = document.getElementById('dashTankPct');
+            if (dtp) {
+                const timeStr = timeEmpty !== null ? ' — ' + formatTime(timeEmpty) + ' to empty' : '';
+                dtp.textContent = pct + '%' + timeStr;
+                dtp.style.color = color;
+            }
+
+            // Pump
+            const dps = document.getElementById('dashPumpStatus');
+            if (dps) { dps.textContent = s.tank.pumpStatus; dps.style.color = s.tank.pumpStatus === 'ENGAGED' ? '#2ecc71' : '#a0aec0'; }
+            const dpsr = document.getElementById('dashPumpSource');
+            if (dpsr) dpsr.textContent = s.tank.hydrantConnected ? 'Flowing from Hydrant' : 'Flowing from ' + s.tank.source;
+            const dtg = document.getElementById('dashTotalGPM');
+            if (dtg) dtg.textContent = totalGPM + ' GPM Total';
+
+            // Lines
+            const dlc = document.getElementById('dashLineCount');
+            if (dlc) dlc.textContent = s.hoseLines.length;
+            const dls = document.getElementById('dashLineSummary');
+            if (dls) {
+                dls.innerHTML = s.hoseLines.map(l =>
+                    '<div style="margin-top:4px;"><span class="tag" style="background:rgba(' + (l.status === 'flowing' ? '46,204,113' : '243,156,18') + ',0.15);color:' + (l.status === 'flowing' ? '#2ecc71' : '#f39c12') + ';">' + l.name + ' — ' + l.status.charAt(0).toUpperCase() + l.status.slice(1) + '</span></div>'
+                ).join('');
+            }
+
+            // PAR
+            const total = s.crew.length;
+            const accounted = s.crew.filter(c => c.status !== 'missing').length;
+            const dpc = document.getElementById('dashPARCount');
+            if (dpc) { dpc.textContent = accounted + '/' + total; dpc.style.color = accounted === total ? '#2ecc71' : '#e74c3c'; }
+            const dpl = document.getElementById('dashPARLabel');
+            if (dpl) dpl.textContent = accounted === total ? 'All Accounted' : 'MISSING PERSONNEL';
+            const dpt = document.getElementById('dashPARTime');
+            if (dpt) {
+                if (s.lastPAR) {
+                    const ago = Math.round((Date.now() - s.lastPAR) / 60000);
+                    dpt.textContent = '\u2705 Last PAR: ' + ago + ' min ago';
+                    dpt.style.color = '#2ecc71';
+                } else {
+                    dpt.textContent = 'No PAR submitted';
+                    dpt.style.color = '#718096';
+                }
+            }
+
+            // Orders on dashboard
+            const doc2 = document.getElementById('dashOrdersContainer');
+            if (doc2) {
+                const pending = s.orders.filter(o => !o.acknowledged);
+                if (pending.length > 0) {
+                    doc2.innerHTML = pending.slice(0, 2).map(o =>
+                        '<div class="order-item" style="border-left-color:#e74c3c;"><div class="order-from">\u2B50 ' + o.from + '</div><div class="order-text">' + o.text + '</div>' +
+                        '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">' + (o.tags||[]).map(t => '<span class="hose-tag">' + t + '</span>').join('') + '</div></div>'
+                    ).join('');
+                } else if (s.orders.length > 0) {
+                    const last = s.orders[s.orders.length - 1];
+                    doc2.innerHTML = '<div class="order-item acknowledged"><div class="order-from">\u2B50 ' + last.from + '</div><div class="order-text">' + last.text + '</div><div class="order-ack"><span class="order-acked-tag">\u2705 Acknowledged</span></div></div>';
+                } else {
+                    doc2.innerHTML = '<div style="color:#718096;text-align:center;padding:20px;">No orders received yet.</div>';
+                }
+            }
+
+            // Incident info
+            setTxt('incidentType', s.incident.type || '—');
+            setTxt('incidentAddr', s.incident.address || '—');
+            setTxt('incidentConst', s.incident.construction || '—');
+            setTxt('incidentIC', s.incident.ic || '—');
+            setTxt('incidentAlarm', s.incident.alarm || '—');
+            setTxt('incidentConditions', s.incident.conditions || '—');
+        }
+
+        // -- Equipment --
+        function renderEquipment() {
+            // Tank gauge
+            const s = STATE;
+            const pct = s.tank.capacity > 0 ? Math.round((s.tank.currentLevel / s.tank.capacity) * 100) : 0;
+            const color = pct > 50 ? '#2ecc71' : pct > 25 ? '#f39c12' : '#e74c3c';
+            const colorGrad = pct > 50 ? 'linear-gradient(to top,#27ae60,#2ecc71,#58d68d)' : pct > 25 ? 'linear-gradient(to top,#e67e22,#f39c12)' : 'linear-gradient(to top,#c0392b,#e74c3c)';
+
+            const fill = document.getElementById('tankWaterFill');
+            if (fill) { fill.style.height = pct + '%'; fill.style.background = colorGrad; }
+            setTxt('tankWaterPct', pct + '%');
+            setTxt('tankGalDisplay', s.tank.currentLevel + ' gal');
+            const tcap = document.getElementById('tankCapDisplay');
+            if (tcap) tcap.textContent = 'of ' + s.tank.capacity + ' gal';
+
+            // Tank markings
+            const tm = document.getElementById('tankMarkings');
+            if (tm) {
+                const cap = s.tank.capacity;
+                tm.innerHTML = '<span>' + cap + '</span><span>' + Math.round(cap*0.75) + '</span><span>' + Math.round(cap*0.5) + '</span><span>' + Math.round(cap*0.25) + '</span><span>0</span>';
+            }
+
+            // Pump stats
+            const totalGPM = getTotalFlowingGPM();
+            const timeEmpty = totalGPM > 0 && !s.tank.hydrantConnected ? formatTime(s.tank.currentLevel / totalGPM) : (s.tank.hydrantConnected ? '\u221E' : 'N/A');
+            setTxt('eqPumpStat', s.tank.pumpStatus);
+            setTxt('eqIntakeSrc', s.tank.hydrantConnected ? 'HYDRANT' : s.tank.source);
+            setTxt('eqTotalGPM', totalGPM);
+            setTxt('eqIntakePSI', s.tank.hydrantConnected ? '65' : '0');
+            setTxt('eqTimeEmpty', timeEmpty);
+            const ehc = document.getElementById('eqHydrantConn');
+            if (ehc) { ehc.textContent = s.tank.hydrantConnected ? 'YES' : 'NO'; ehc.style.color = s.tank.hydrantConnected ? '#2ecc71' : '#e74c3c'; }
+
+            // Form prefill
+            document.getElementById('editTankCap').value = s.tank.capacity;
+            document.getElementById('editTankLevel').value = s.tank.currentLevel;
+            document.getElementById('editPumpStatus').value = s.tank.pumpStatus;
+            document.getElementById('editPumpSource').value = s.tank.source;
+
+            // Hose load table
+            const hlt = document.getElementById('hoseLoadTable');
+            if (hlt) {
+                hlt.innerHTML = s.hoseLoad.map(h => {
+                    const avail = h.total - h.deployed;
+                    return '<tr><td style="font-weight:700;">' + h.diam + '</td><td>' + h.total + ' ft</td><td style="color:#e67e22;">' + h.deployed + ' ft</td><td>' + avail + ' ft</td><td style="color:#00d4ff;">' + h.coeff + '</td></tr>';
+                }).join('');
+            }
+
+            // Equipment grid
+            const eg = document.getElementById('equipGrid');
+            if (eg) {
+                eg.innerHTML = s.equipment.map((e, i) =>
+                    '<div class="equip-item' + (e.deployed ? ' deployed' : '') + '" onclick="toggleEquipDeploy(' + i + ')">' +
+                    '<div class="equip-icon">' + e.icon + '</div>' +
+                    '<div class="equip-name">' + e.name + '</div>' +
+                    '<div class="equip-count">' + (e.deployed ? 'DEPLOYED' : e.count) + '</div></div>'
+                ).join('');
+            }
+        }
+
+        // -- PAR --
+        function renderPAR() {
+            const total = STATE.crew.length;
+            const accounted = STATE.crew.filter(c => c.status !== 'missing').length;
+            const allGood = accounted === total && total > 0;
+
+            const banner = document.getElementById('parBanner');
+            if (banner) {
+                if (total === 0) {
+                    banner.style.background = 'rgba(255,255,255,0.03)';
+                    banner.style.border = '2px solid rgba(255,255,255,0.1)';
+                    banner.innerHTML = '<div><div style="font-size:1.1rem;font-weight:800;color:#718096;">NO CREW MEMBERS ADDED</div><div style="font-size:0.8rem;color:#a0aec0;margin-top:4px;">Add crew members below to begin PAR tracking</div></div><div style="font-size:2rem;font-weight:900;color:#718096;">0/0</div>';
+                } else {
+                    banner.style.background = allGood ? 'rgba(46,204,113,0.08)' : 'rgba(231,76,60,0.08)';
+                    banner.style.border = '2px solid ' + (allGood ? 'rgba(46,204,113,0.3)' : 'rgba(231,76,60,0.3)');
+                    const lastStr = STATE.lastPAR ? ' — ' + Math.round((Date.now() - STATE.lastPAR)/60000) + ' min ago' : '';
+                    banner.innerHTML = '<div><div style="font-size:1.1rem;font-weight:800;color:' + (allGood ? '#2ecc71' : '#e74c3c') + ';">' + (allGood ? '\u2705 ALL PERSONNEL ACCOUNTED' : '\u{1F6A8} PERSONNEL UNACCOUNTED') + ' — ' + accounted + '/' + total + '</div><div style="font-size:0.8rem;color:#a0aec0;margin-top:4px;">Last PAR' + lastStr + '</div></div><div style="font-size:2rem;font-weight:900;color:' + (allGood ? '#2ecc71' : '#e74c3c') + ';">' + accounted + '/' + total + '</div>';
+                }
+            }
+
+            const roster = document.getElementById('crewRoster');
+            if (roster) {
+                if (STATE.crew.length === 0) {
+                    roster.innerHTML = '<div style="color:#718096;text-align:center;padding:20px;">No crew members. Add members above.</div>';
+                } else {
+                    roster.innerHTML = STATE.crew.map((c, i) => {
+                        const scbaPct = Math.round((c.scba / MAX_SCBA) * 100);
+                        const scbaClass = scbaPct > 50 ? 'good' : scbaPct > 25 ? 'low' : 'critical';
+                        const statusOpts = ['accounted','working','rehab','missing'];
+                        return '<div class="crew-card">' +
+                            '<div class="crew-avatar ' + c.role + '">' + getInitials(c.name) + '</div>' +
+                            '<div class="crew-info"><div class="crew-name">' + c.name + '</div><div class="crew-role">' + getRoleIcon(c.role) + ' ' + getRoleLabel(c.role) + '</div><div class="crew-assignment">\u{1F4CD} ' + (c.assignment || 'Unassigned') + '</div></div>' +
+                            '<div class="crew-status">' +
+                            '<div><div class="scba-bar"><div class="scba-fill ' + scbaClass + '" style="width:' + scbaPct + '%;"></div></div><div class="scba-text">SCBA: ' + c.scba + ' PSI (' + scbaPct + '%)' + (scbaPct <= 25 ? ' \u26A0\uFE0F' : '') + '</div></div>' +
+                            '<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">' +
+                            statusOpts.map(st => '<button class="btn btn-sm ' + (c.status === st ? (st === 'missing' ? 'btn-danger' : st === 'working' ? 'btn-warning' : 'btn-success') : '') + '" style="padding:3px 8px;font-size:0.65rem;" onclick="setCrewStatus(' + i + ',\'' + st + '\')">' + st.charAt(0).toUpperCase() + st.slice(1) + '</button>').join('') +
+                            '</div>' +
+                            '<div style="margin-top:6px;"><input type="range" min="0" max="4500" step="100" value="' + c.scba + '" style="width:100%;" onchange="setCrewSCBA(' + i + ',this.value)"><span style="font-size:0.6rem;color:#718096;">Adjust SCBA</span></div>' +
+                            '<button class="btn btn-danger btn-sm" style="margin-top:4px;padding:2px 8px;font-size:0.6rem;" onclick="removeCrew(' + i + ')">Remove</button>' +
+                            '</div></div>';
+                    }).join('');
+                }
+            }
+
+            // PAR History
+            const pht = document.getElementById('parHistoryTable');
+            if (pht) {
+                pht.innerHTML = STATE.parHistory.slice().reverse().map(p =>
+                    '<tr><td>' + p.time + '</td><td>' + p.by + '</td><td><span class="tag" style="background:rgba(' + (p.result.includes('Accounted') ? '46,204,113' : '231,76,60') + ',0.15);color:' + (p.result.includes('Accounted') ? '#2ecc71' : '#e74c3c') + ';">' + p.result + '</span></td><td>' + p.responseTime + '</td></tr>'
+                ).join('');
+            }
+        }
+
+        // -- Hose Lines --
+        function renderHoseLines() {
+            const container = document.getElementById('hoseLinesContainer');
+            if (!container) return;
+            if (STATE.hoseLines.length === 0) {
+                container.innerHTML = '<div style="color:#718096;text-align:center;padding:30px;background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.1);border-radius:14px;">No hose lines deployed. Use the form above to deploy a line.</div>';
+                return;
+            }
+            container.innerHTML = STATE.hoseLines.map((l, i) => {
+                const C = l.coeff;
+                const FL = C * Math.pow(l.gpm / 100, 2) * (l.length / 100);
+                const EL = l.floors * 5;
+                const AFL = l.appliances * 25;
+                const PDP = l.np + FL + EL + AFL;
+                return '<div class="hose-line-card ' + (l.status === 'flowing' ? 'flowing' : 'standby') + '">' +
+                    '<div class="hose-header"><div class="hose-id">' + (l.status === 'flowing' ? '\u{1F534}' : '\u{1F7E1}') + ' ' + l.name + '</div>' +
+                    '<div style="display:flex;gap:6px;align-items:center;"><select class="form-control" style="padding:4px 8px;font-size:0.75rem;max-width:120px;" onchange="updateLineStatus(' + i + ',this.value)"><option value="flowing"' + (l.status==='flowing'?' selected':'') + '>Flowing</option><option value="charged"' + (l.status==='charged'?' selected':'') + '>Charged</option><option value="dry"' + (l.status==='dry'?' selected':'') + '>Dry</option></select>' +
+                    '<button class="btn btn-danger btn-sm" onclick="removeLine(' + i + ')">X</button></div></div>' +
+                    '<div class="hose-specs">' +
+                    '<div class="hose-spec"><div class="hose-spec-value">' + l.diameter + '"</div><div class="hose-spec-label">Diameter</div></div>' +
+                    '<div class="hose-spec"><div class="hose-spec-value">' + l.length + ' ft</div><div class="hose-spec-label">Length</div></div>' +
+                    '<div class="hose-spec"><div class="hose-spec-value">' + l.gpm + ' GPM</div><div class="hose-spec-label">Flow Rate</div></div>' +
+                    '<div class="hose-spec"><div class="hose-spec-value">' + Math.round(PDP) + ' PSI</div><div class="hose-spec-label">Req. PDP</div></div></div>' +
+                    '<div class="hose-assignment">' +
+                    '<span class="hose-tag purpose">\u{1F525} ' + l.purpose + '</span>' +
+                    '<span class="hose-tag side">\u{1F4CD} ' + l.side + '</span>' +
+                    '<span class="hose-tag floor">\u{1F3E2} ' + l.floor + '</span></div>' +
+                    '<div class="pdp-calc">' +
+                    '<div style="font-size:0.8rem;font-weight:700;color:#00d4ff;margin-bottom:8px;">\u{1F4CA} PDP Calculation</div>' +
+                    '<div class="pdp-calc-row"><span>Nozzle Pressure (NP)</span><span style="color:#e2e8f0;">' + l.np + ' PSI</span></div>' +
+                    '<div class="pdp-calc-row"><span>Friction Loss: ' + C + ' x (' + l.gpm + '/100)\u00B2 x (' + l.length + '/100)</span><span style="color:#e2e8f0;">' + FL.toFixed(1) + ' PSI</span></div>' +
+                    '<div class="pdp-calc-row"><span>Elevation (' + l.floors + ' floors x 5)</span><span style="color:#e2e8f0;">' + EL + ' PSI</span></div>' +
+                    '<div class="pdp-calc-row"><span>Appliance Loss (' + l.appliances + ' x 25)</span><span style="color:#e2e8f0;">' + AFL + ' PSI</span></div>' +
+                    '<div class="pdp-calc-row total"><span>Required PDP</span><span>' + Math.round(PDP) + ' PSI</span></div></div></div>';
+            }).join('');
+        }
+
+        // -- Water Supply --
+        function renderWaterSupply() {
+            const s = STATE;
+            const totalGPM = getTotalFlowingGPM();
+            const timeMin = totalGPM > 0 && !s.tank.hydrantConnected ? s.tank.currentLevel / totalGPM : null;
+
+            const disp = document.getElementById('waterTimerDisplay');
+            if (disp) {
+                if (s.tank.hydrantConnected) {
+                    disp.textContent = '\u221E';
+                    disp.className = 'water-timer-value good';
+                } else if (timeMin !== null) {
+                    disp.textContent = formatTimerDisplay(timeMin);
+                    disp.className = 'water-timer-value ' + (timeMin > 5 ? 'good' : timeMin > 2 ? 'warning' : 'critical');
+                } else {
+                    disp.textContent = '--:--';
+                    disp.className = 'water-timer-value';
+                }
+            }
+
+            const hs = document.getElementById('waterHydrantStatus');
+            if (hs) {
+                hs.className = 'water-hydrant-status ' + (s.tank.hydrantConnected ? 'connected' : 'not-connected');
+                hs.textContent = s.tank.hydrantConnected ? '\u{1F7E2} CONNECTED TO HYDRANT' : '\u{1F534} NOT CONNECTED TO HYDRANT';
+            }
+
+            const warn = document.getElementById('waterWarning');
+            if (warn) {
+                if (!s.tank.hydrantConnected && timeMin !== null && timeMin < 5) {
+                    warn.style.display = 'block';
+                    setTxt('waterWarningText', 'Estimated ' + formatTime(timeMin) + ' until tank is empty at current flow rate (' + totalGPM + ' GPM).');
+                } else {
+                    warn.style.display = 'none';
+                }
+            }
+
+            const btn = document.getElementById('hydrantToggleBtn');
+            if (btn) {
+                btn.textContent = s.tank.hydrantConnected ? '\u274C Disconnect Hydrant' : '\u{1F4A5} Connect to Hydrant';
+                btn.className = s.tank.hydrantConnected ? 'btn btn-danger' : 'btn btn-success';
+            }
+
+            // Flow table
+            const ft = document.getElementById('flowSummaryTable');
+            if (ft) {
+                ft.innerHTML = s.hoseLines.map(l => {
+                    const gpm = l.status === 'flowing' ? l.gpm : 0;
+                    const stColor = l.status === 'flowing' ? '#2ecc71' : '#f39c12';
+                    const stLabel = l.status.charAt(0).toUpperCase() + l.status.slice(1);
+                    return '<tr><td style="font-weight:700;">' + l.name + '</td><td>' + l.diameter + '"</td><td style="color:#00d4ff;font-weight:700;">' + gpm + '</td><td><span class="tag" style="background:rgba(' + (l.status==='flowing'?'46,204,113':'243,156,18') + ',0.15);color:' + stColor + ';">' + stLabel + '</span></td></tr>';
+                }).join('');
+            }
+            setTxt('totalFlowGPM', totalGPM + ' GPM');
+
+            // Calculation detail
+            const cd = document.getElementById('waterCalcDetail');
+            if (cd && totalGPM > 0 && !s.tank.hydrantConnected) {
+                cd.innerHTML = 'Tank Remaining: <span style="color:#f39c12;font-weight:700;">' + s.tank.currentLevel + ' gal</span><br>Total Flow: <span style="color:#00d4ff;font-weight:700;">' + totalGPM + ' GPM</span><br>Time = ' + s.tank.currentLevel + ' \u00F7 ' + totalGPM + ' = <span style="color:#f39c12;font-weight:700;">' + formatTime(timeMin) + '</span>';
+            } else if (cd && s.tank.hydrantConnected) {
+                cd.innerHTML = '<span style="color:#2ecc71;font-weight:700;">Hydrant connected — continuous supply</span>';
+            } else if (cd) {
+                cd.textContent = 'No lines flowing.';
+            }
+        }
+
+        // -- Hydrants --
+        function renderHydrants() {
+            const ht = document.getElementById('hydrantTable');
+            if (!ht) return;
+            if (STATE.hydrants.length === 0) {
+                ht.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#718096;padding:20px;">No hydrants added. Use the form above to add hydrants.</td></tr>';
+                return;
+            }
+            ht.innerHTML = STATE.hydrants.map((h, i) => {
+                const classColor = {AA:'#2980b9',A:'#27ae60',B:'#e67e22',C:'#e74c3c'}[h.cls] || '#718096';
+                const statusColor = h.status === 'Available' ? '#2ecc71' : h.status === 'In Use' ? '#f39c12' : '#e74c3c';
+                return '<tr' + (h.status==='Out of Service'?' style="opacity:0.5;"':'') + '><td style="font-weight:700;">' + h.id + '</td><td>' + h.location + '</td><td><span class="tag" style="background:rgba(' + hexToRGBStr(classColor) + ',0.15);color:' + classColor + ';">' + h.cls + '</span></td><td style="font-weight:700;color:#00d4ff;">' + h.gpm.toLocaleString() + '</td><td>' + h.psi + '</td><td>' + h.distance + ' ft</td><td><span class="tag" style="background:rgba(' + hexToRGBStr(statusColor) + ',0.15);color:' + statusColor + ';">' + h.status + '</span></td><td><button class="btn btn-danger btn-sm" onclick="removeHydrant(' + i + ')">X</button></td></tr>';
+            }).join('');
+        }
+
+        // -- Orders --
+        function renderOrders() {
+            const c = document.getElementById('ordersContainer');
+            const noMsg = document.getElementById('noOrdersMsg');
+            if (!c) return;
+            if (STATE.orders.length === 0) {
+                c.innerHTML = '';
+                if (noMsg) noMsg.style.display = 'block';
+                return;
+            }
+            if (noMsg) noMsg.style.display = 'none';
+            c.innerHTML = STATE.orders.slice().reverse().map((o, ri) => {
+                const i = STATE.orders.length - 1 - ri;
+                return '<div class="order-item' + (o.acknowledged ? ' acknowledged' : '') + '"><div class="order-time">' + o.time + '</div><div class="order-from">\u2B50 ' + o.from + '</div><div class="order-text">' + o.text + '</div>' +
+                    '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">' + (o.tags||[]).map(t => '<span class="hose-tag">' + t + '</span>').join('') + '</div>' +
+                    '<div class="order-ack">' + (o.acknowledged ? '<span class="order-acked-tag">\u2705 Acknowledged at ' + o.ackTime + '</span>' : '<button class="order-ack-btn" onclick="ackOrder(' + i + ')">\u2705 Acknowledge</button>') + '</div></div>';
+            }).join('');
+        }
+
+        // -- Comms --
+        function renderComms() {
+            const tl = document.getElementById('commsTimeline');
+            if (!tl) return;
+            if (STATE.comms.length === 0) {
+                tl.innerHTML = '<div style="color:#718096;text-align:center;padding:20px;">No communications yet. Send a message above.</div>';
+                return;
+            }
+            tl.innerHTML = STATE.comms.slice().reverse().map(c =>
+                '<div class="timeline-item"><div class="timeline-time">' + c.time + '</div><div class="timeline-content"><strong style="color:' + (c.direction === 'out' ? '#2ecc71' : '#e74c3c') + ';">' + c.sender + ':</strong> ' + c.text + '</div></div>'
+            ).join('');
+        }
+
+        // -- Badges --
+        function updateBadges() {
+            const pb = document.getElementById('parBadge');
+            if (pb) {
+                const t = STATE.crew.length;
+                const a = STATE.crew.filter(c => c.status !== 'missing').length;
+                pb.textContent = a + '/' + t;
+                pb.style.background = (a === t && t > 0) ? '#2ecc71' : '#e74c3c';
+            }
+            const hb = document.getElementById('hosesBadge');
+            if (hb) hb.textContent = STATE.hoseLines.length;
+            const ob = document.getElementById('ordersBadge');
+            if (ob) {
+                const pending = STATE.orders.filter(o => !o.acknowledged).length;
+                ob.textContent = pending;
+                ob.style.background = pending > 0 ? '#e74c3c' : '#2ecc71';
+            }
+        }
+
+        // ===================== ACTIONS =====================
+
+        // Incident info
+        window.toggleIncidentEdit = function() {
+            const f = document.getElementById('incidentEditForm');
+            f.style.display = f.style.display === 'none' ? 'block' : 'none';
+            if (f.style.display === 'block') {
+                document.getElementById('editIncType').value = STATE.incident.type;
+                document.getElementById('editIncAddr').value = STATE.incident.address;
+                document.getElementById('editIncConst').value = STATE.incident.construction;
+                document.getElementById('editIncIC').value = STATE.incident.ic;
+                document.getElementById('editIncAlarm').value = STATE.incident.alarm;
+                document.getElementById('editIncCond').value = STATE.incident.conditions;
+            }
+        };
+
+        window.saveIncidentInfo = function() {
+            STATE.incident.type = document.getElementById('editIncType').value;
+            STATE.incident.address = document.getElementById('editIncAddr').value;
+            STATE.incident.construction = document.getElementById('editIncConst').value;
+            STATE.incident.ic = document.getElementById('editIncIC').value;
+            STATE.incident.alarm = document.getElementById('editIncAlarm').value;
+            STATE.incident.conditions = document.getElementById('editIncCond').value;
+            document.getElementById('incidentEditForm').style.display = 'none';
+            saveState();
+            renderAll();
+            showToast('Incident info saved');
+        };
+
+        // Tank / Pump
+        window.saveTankPump = function() {
+            STATE.tank.capacity = parseInt(document.getElementById('editTankCap').value) || 750;
+            STATE.tank.currentLevel = Math.min(parseInt(document.getElementById('editTankLevel').value) || 0, STATE.tank.capacity);
+            STATE.tank.pumpStatus = document.getElementById('editPumpStatus').value;
+            STATE.tank.source = document.getElementById('editPumpSource').value;
+            if (STATE.tank.source === 'HYDRANT') STATE.tank.hydrantConnected = true;
+            saveState();
+            renderAll();
+            showToast('Tank & pump updated');
+        };
+
+        // Equipment
+        window.toggleAddEquipment = function() {
+            const f = document.getElementById('addEquipForm');
+            f.style.display = f.style.display === 'none' ? 'block' : 'none';
+        };
+
+        window.addEquipment = function() {
+            const name = document.getElementById('newEquipName').value.trim();
+            if (!name) return showToast('Enter equipment name', 'error');
+            STATE.equipment.push({ name: name, icon: document.getElementById('newEquipIcon').value || '\u{1F527}', count: document.getElementById('newEquipCount').value || '1', deployed: false });
+            document.getElementById('newEquipName').value = '';
+            saveState();
+            renderAll();
+            showToast('Equipment added');
+        };
+
+        window.toggleEquipDeploy = function(i) {
+            STATE.equipment[i].deployed = !STATE.equipment[i].deployed;
+            saveState();
+            renderAll();
+            showToast(STATE.equipment[i].name + (STATE.equipment[i].deployed ? ' deployed' : ' returned'));
+        };
+
+        // Crew
+        window.addCrewMember = function() {
+            const name = document.getElementById('newCrewName').value.trim();
+            if (!name) return showToast('Enter crew member name', 'error');
+            STATE.crew.push({
+                name: name,
+                role: document.getElementById('newCrewRole').value,
+                assignment: document.getElementById('newCrewAssign').value,
+                scba: parseInt(document.getElementById('newCrewSCBA').value) || 4500,
+                status: 'accounted'
+            });
+            document.getElementById('newCrewName').value = '';
+            document.getElementById('newCrewAssign').value = '';
+            document.getElementById('newCrewSCBA').value = '4500';
+            saveState();
+            renderAll();
+            showToast(name + ' added to roster');
+        };
+
+        window.setCrewStatus = function(i, status) {
+            STATE.crew[i].status = status;
+            saveState();
+            renderAll();
+            showToast(STATE.crew[i].name + ' → ' + status);
+        };
+
+        window.setCrewSCBA = function(i, val) {
+            STATE.crew[i].scba = parseInt(val);
+            saveState();
+            renderAll();
+        };
+
+        window.removeCrew = function(i) {
+            const name = STATE.crew[i].name;
+            STATE.crew.splice(i, 1);
+            saveState();
+            renderAll();
+            showToast(name + ' removed from roster', 'warning');
+        };
+
+        // PAR
+        window.submitPAR = function() {
+            const total = STATE.crew.length;
+            if (total === 0) return showToast('No crew to PAR', 'error');
+            const accounted = STATE.crew.filter(c => c.status !== 'missing').length;
+            STATE.lastPAR = Date.now();
+            STATE.parHistory.push({
+                time: new Date().toLocaleTimeString('en-US', {hour12:false}),
+                by: 'Engine 7 — Officer',
+                result: accounted + '/' + total + (accounted === total ? ' Accounted' : ' MISSING'),
+                responseTime: Math.floor(Math.random() * 10 + 5) + ' sec'
+            });
+            saveState();
+            renderAll();
+            showToast('PAR Submitted: ' + accounted + '/' + total);
+        };
+
+        window.requestIndividualCheck = function() {
+            showToast('Individual check requested — awaiting crew response', 'warning');
+        };
+
+        window.sendMayday = function() {
+            if (confirm('\u{1F6A8} CONFIRM MAYDAY\n\nThis will send an emergency MAYDAY signal to Incident Command.\n\nProceed?')) {
+                STATE.comms.push({ time: new Date().toLocaleTimeString('en-US',{hour12:false}), sender: 'Engine 7 \u2192 ALL', text: '\u{1F6A8}\u{1F6A8}\u{1F6A8} MAYDAY MAYDAY MAYDAY — Engine 7 declaring MAYDAY', direction: 'out' });
+                saveState();
+                renderAll();
+                showToast('\u{1F6A8} MAYDAY TRANSMITTED', 'error');
+            }
+        };
+
+        // Hose Lines
+        window.addHoseLine = function() {
+            const name = document.getElementById('newLineName').value.trim();
+            if (!name) return showToast('Enter line name', 'error');
+            const sel = document.getElementById('newLineDiam');
+            const coeff = parseFloat(sel.options[sel.selectedIndex].getAttribute('data-coeff'));
+            STATE.hoseLines.push({
+                name: name,
+                diameter: sel.value,
+                coeff: coeff,
+                length: parseInt(document.getElementById('newLineLen').value) || 200,
+                gpm: parseInt(document.getElementById('newLineGPM').value) || 150,
+                np: parseInt(document.getElementById('newLineNP').value) || 50,
+                floors: parseInt(document.getElementById('newLineFloors').value) || 0,
+                appliances: parseInt(document.getElementById('newLineAppl').value) || 0,
+                purpose: document.getElementById('newLinePurpose').value,
+                side: document.getElementById('newLineSide').value,
+                floor: document.getElementById('newLineFloor').value || '1ST FLOOR',
+                status: document.getElementById('newLineStatus').value
+            });
+            document.getElementById('newLineName').value = '';
+            saveState();
+            renderAll();
+            showToast('Hose line deployed: ' + name);
+        };
+
+        window.updateLineStatus = function(i, status) {
+            STATE.hoseLines[i].status = status;
+            saveState();
+            renderAll();
+        };
+
+        window.removeLine = function(i) {
+            const name = STATE.hoseLines[i].name;
+            STATE.hoseLines.splice(i, 1);
+            saveState();
+            renderAll();
+            showToast(name + ' removed', 'warning');
+        };
+
+        // Hydrants
+        window.addHydrant = function() {
+            const id = document.getElementById('newHydID').value.trim();
+            if (!id) return showToast('Enter hydrant ID', 'error');
+            STATE.hydrants.push({
+                id: id,
+                location: document.getElementById('newHydLoc').value,
+                cls: document.getElementById('newHydClass').value,
+                gpm: parseInt(document.getElementById('newHydGPM').value) || 1000,
+                psi: parseInt(document.getElementById('newHydPSI').value) || 60,
+                distance: parseInt(document.getElementById('newHydDist').value) || 200,
+                status: document.getElementById('newHydStatus').value
+            });
+            document.getElementById('newHydID').value = '';
+            document.getElementById('newHydLoc').value = '';
+            saveState();
+            renderAll();
+            showToast('Hydrant ' + id + ' added');
+        };
+
+        window.removeHydrant = function(i) {
+            STATE.hydrants.splice(i, 1);
+            saveState();
+            renderAll();
+            showToast('Hydrant removed', 'warning');
+        };
+
+        // Hydrant toggle
+        window.toggleHydrant = function() {
+            STATE.tank.hydrantConnected = !STATE.tank.hydrantConnected;
+            STATE.tank.source = STATE.tank.hydrantConnected ? 'HYDRANT' : 'TANK';
+            saveState();
+            renderAll();
+            showToast(STATE.tank.hydrantConnected ? 'Hydrant connected!' : 'Hydrant disconnected', STATE.tank.hydrantConnected ? '' : 'warning');
+        };
+
+        // Orders (simulate receiving)
+        window.ackOrder = function(i) {
+            STATE.orders[i].acknowledged = true;
+            STATE.orders[i].ackTime = new Date().toLocaleTimeString('en-US', {hour12:false});
+            STATE.comms.push({ time: STATE.orders[i].ackTime, sender: 'Engine 7 \u2192 IC', text: 'Engine 7 acknowledges: ' + STATE.orders[i].text.substring(0, 60) + '...', direction: 'out' });
+            saveState();
+            renderAll();
+            showToast('Order acknowledged');
+        };
+
+        // Comms
+        window.sendComms = function() {
+            const msg = document.getElementById('commsMsg').value.trim();
+            if (!msg) return;
+            const sender = document.getElementById('commsSender').value;
+            STATE.comms.push({
+                time: new Date().toLocaleTimeString('en-US', {hour12:false}),
+                sender: sender,
+                text: msg,
+                direction: 'out'
+            });
+            document.getElementById('commsMsg').value = '';
+            saveState();
+            renderAll();
+            showToast('Message sent');
+        };
+
+        // PDP Calculator
+        window.calcPDP = function() {
+            const C = parseFloat(document.getElementById('calcDiam').value);
+            const L = parseFloat(document.getElementById('calcLen').value) || 0;
+            const Q = parseFloat(document.getElementById('calcGPM').value) || 0;
+            const NP = parseFloat(document.getElementById('calcNP').value) || 0;
+            const floors = parseFloat(document.getElementById('calcFloors').value) || 0;
+            const appl = parseFloat(document.getElementById('calcAppl').value) || 0;
+            const FL = C * Math.pow(Q / 100, 2) * (L / 100);
+            const EL = floors * 5;
+            const AFL = appl * 25;
+            const PDP = NP + FL + EL + AFL;
+            setTxt('calcPDPResult', Math.round(PDP) + ' PSI');
+            setTxt('calcBreakdown', 'NP: ' + NP + ' + FL: ' + FL.toFixed(1) + ' + EL: ' + EL + ' + AFL: ' + AFL);
+        };
+
+        // ===================== WATER DRAIN SIMULATION =====================
+        setInterval(function() {
+            if (STATE.tank.pumpStatus === 'ENGAGED' && !STATE.tank.hydrantConnected) {
+                const totalGPM = getTotalFlowingGPM();
+                if (totalGPM > 0) {
+                    const drain = totalGPM / 60; // gallons per second
+                    STATE.tank.currentLevel = Math.max(0, STATE.tank.currentLevel - drain);
+                    STATE.tankHistory.push({ time: Date.now(), level: Math.round(STATE.tank.currentLevel) });
+                    if (STATE.tankHistory.length > 120) STATE.tankHistory.shift();
+                    saveState();
+                    renderAll();
+                }
+            }
+        }, 1000);
+
+        // ===================== HELPERS =====================
+        function getTotalFlowingGPM() {
+            return STATE.hoseLines.filter(l => l.status === 'flowing').reduce((sum, l) => sum + l.gpm, 0);
+        }
+
+        function formatTime(minutes) {
+            if (minutes === null || minutes === undefined || !isFinite(minutes)) return '--:--';
+            const m = Math.floor(minutes);
+            const s = Math.round((minutes - m) * 60);
+            return m + ':' + String(s).padStart(2, '0');
+        }
+
+        function formatTimerDisplay(minutes) {
+            if (minutes === null || !isFinite(minutes)) return '--:--';
+            const m = Math.floor(minutes);
+            const s = Math.round((minutes - m) * 60);
+            return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+
+        function setTxt(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        }
+
+        function getInitials(name) {
+            return name.split(/[\s.]+/).filter(p => p.length > 0 && p[0] === p[0].toUpperCase()).map(p => p[0]).slice(0, 2).join('');
+        }
+
+        function getRoleIcon(role) {
+            return { officer: '\u{1F468}\u200D\u2708\uFE0F', engineer: '\u{1F527}', firefighter: '\u{1F525}', probie: '\u{1F7E2}' }[role] || '';
+        }
+
+        function getRoleLabel(role) {
+            return { officer: 'Officer / OIC', engineer: 'Driver / Engineer', firefighter: 'Firefighter', probie: 'Probationary FF' }[role] || role;
+        }
+
+        function hexToRGBStr(hex) {
+            const r = parseInt(hex.slice(1,3), 16);
+            const g = parseInt(hex.slice(3,5), 16);
+            const b = parseInt(hex.slice(5,7), 16);
+            return r + ',' + g + ',' + b;
+        }
+
+        // Tank chart
+        function drawTankChart() {
+            const canvas = document.getElementById('tankChart');
+            if (!canvas || !canvas.getContext) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth * 2;
+            canvas.height = 400;
+            ctx.scale(2, 2);
+            const w = canvas.offsetWidth;
+            const h = 200;
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, w, h);
+
+            const cap = STATE.tank.capacity || 750;
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = 20 + (i * (h - 40) / 4);
+                ctx.beginPath(); ctx.moveTo(50, y); ctx.lineTo(w - 20, y); ctx.stroke();
+                ctx.fillStyle = '#a0aec0';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText((cap - i * (cap/4)).toFixed(0) + 'g', 45, y + 4);
+            }
+
+            if (STATE.tankHistory.length > 1) {
+                const data = STATE.tankHistory.slice(-60);
+                ctx.beginPath();
+                ctx.strokeStyle = '#f39c12';
+                ctx.lineWidth = 3;
+                ctx.lineJoin = 'round';
+                data.forEach((d, i) => {
+                    const x = 50 + i * ((w - 70) / Math.max(data.length - 1, 1));
+                    const y = 20 + ((cap - d.level) / cap) * (h - 40);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            }
+
+            // Danger line at 15%
+            const dangerY = 20 + ((cap - cap * 0.15) / cap) * (h - 40);
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(50, dangerY); ctx.lineTo(w - 20, dangerY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#e74c3c';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('CRITICAL (15%)', w - 90, dangerY - 4);
+        }
+
+        // Redraw chart periodically
+        setInterval(drawTankChart, 2000);
+        setTimeout(drawTankChart, 200);
+
+        // Initial render
+        calcPDP();
+        renderAll();
+
+    })();
+    </script>
+</body>
+</html>

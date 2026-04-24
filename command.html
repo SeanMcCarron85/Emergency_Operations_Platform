@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmergencyOS — Incident Command</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Command-specific overrides */
+        .cmd-header { background: linear-gradient(135deg, #1a1a2e 0%, #1a2332 50%, #1a2e1a 100%); border-bottom: 3px solid #f1c40f; }
+        .cmd-header .logo-icon { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #1a1a2e; }
+
+        /* Button Navigation */
+        .sidebar { padding: 10px 8px !important; }
+        .nav-section { margin-bottom: 6px; }
+        .nav-section-title { padding: 6px 10px 4px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.5px; color: #718096; font-weight: 700; }
+        .nav-btn {
+            display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 12px 14px; margin-bottom: 4px;
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; background: rgba(255,255,255,0.02);
+            color: #a0aec0; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+            text-align: left; position: relative; overflow: hidden; font-family: inherit;
+        }
+        .nav-btn:hover { background: rgba(241, 196, 15, 0.08); border-color: rgba(241, 196, 15, 0.2); color: #e2e8f0; transform: translateX(2px); }
+        .nav-btn:active { transform: scale(0.97); background: rgba(241, 196, 15, 0.15); }
+        .nav-btn.active { background: rgba(241, 196, 15, 0.12); border-color: rgba(241, 196, 15, 0.35); color: #f1c40f; box-shadow: 0 0 12px rgba(241, 196, 15, 0.1), inset 0 0 0 1px rgba(241, 196, 15, 0.1); }
+        .nav-btn .nav-icon { font-size: 1.3rem; width: 28px; text-align: center; flex-shrink: 0; }
+        .nav-btn .nav-label { flex: 1; }
+        .nav-btn .nav-badge { font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 10px; color: #fff; flex-shrink: 0; }
+        .nav-btn.link-btn { min-height: 42px; padding: 8px 14px; font-size: 0.82rem; border: 1px dashed rgba(255,255,255,0.08); color: #718096; }
+        .nav-btn.link-btn:hover { background: rgba(0, 212, 255, 0.05); border-color: rgba(0, 212, 255, 0.2); color: #00d4ff; }
+
+        /* Unit Cards */
+        .unit-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; cursor: pointer; }
+        .unit-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+        .unit-card.selected { border-color: #f1c40f; background: rgba(241,196,15,0.05); }
+        .unit-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .unit-id { font-weight: 900; font-size: 1.1rem; color: #e2e8f0; }
+        .unit-type-badge { padding: 3px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
+        .unit-type-badge.engine { background: rgba(231,76,60,0.15); color: #e74c3c; }
+        .unit-type-badge.ladder { background: rgba(52,152,219,0.15); color: #3498db; }
+        .unit-type-badge.quint { background: rgba(155,89,182,0.15); color: #9b59b6; }
+        .unit-type-badge.bc { background: rgba(241,196,15,0.15); color: #f1c40f; }
+        .unit-type-badge.rescue { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .unit-status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; }
+        .unit-status-badge.on-scene { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .unit-status-badge.en-route { background: rgba(52,152,219,0.15); color: #3498db; }
+        .unit-status-badge.staging { background: rgba(243,156,18,0.15); color: #f39c12; }
+        .unit-meta { font-size: 0.8rem; color: #a0aec0; margin-bottom: 8px; }
+        .unit-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+        .unit-stat { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; }
+        .unit-stat-value { font-weight: 700; }
+        .unit-water-bar { width: 60px; height: 6px; background: #2d3748; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
+        .unit-water-fill { height: 100%; border-radius: 3px; }
+
+        /* Tactical Assignment Builder */
+        .assign-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .assign-form label { font-size: 0.75rem; color: #a0aec0; display: block; margin-bottom: 6px; }
+        .assign-form select, .assign-form input { width: 100%; padding: 10px; background: #1a1a2e; color: #e2e8f0; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-size: 0.85rem; }
+        .assign-form select:focus, .assign-form input:focus { border-color: #f1c40f; outline: none; }
+        .assign-preview { background: rgba(241,196,15,0.06); border: 2px solid rgba(241,196,15,0.2); border-radius: 12px; padding: 16px; margin-top: 16px; }
+        .assign-preview-text { font-size: 1rem; font-weight: 700; color: #e2e8f0; line-height: 1.5; }
+        .send-order-btn { padding: 12px 30px; background: linear-gradient(135deg, #f1c40f, #f39c12); color: #1a1a2e; border: none; border-radius: 10px; font-weight: 800; font-size: 0.9rem; cursor: pointer; margin-top: 12px; transition: all 0.2s; }
+        .send-order-btn:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(241,196,15,0.3); }
+
+        /* Building Diagram */
+        .building-diagram { width: 100%; max-width: 500px; margin: 0 auto; }
+        .building-side { padding: 12px; border: 2px solid rgba(255,255,255,0.1); text-align: center; font-weight: 700; font-size: 0.85rem; color: #a0aec0; position: relative; cursor: pointer; transition: all 0.2s; border-radius: 8px; }
+        .building-side:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.03); }
+        .building-side .side-label { font-size: 1.2rem; font-weight: 900; color: #e2e8f0; }
+        .building-side .side-units { font-size: 0.7rem; color: #00d4ff; margin-top: 4px; }
+        .building-center { background: rgba(231,76,60,0.08); border: 2px solid rgba(231,76,60,0.3); border-radius: 12px; padding: 20px; text-align: center; }
+        .building-center .fire-icon { font-size: 2rem; }
+        .building-center .addr { font-size: 0.8rem; color: #e74c3c; font-weight: 700; margin-top: 4px; }
+
+        /* Pump Operations */
+        .pump-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+        .pump-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .pump-card-title { font-weight: 800; color: #e2e8f0; font-size: 1rem; }
+        .pump-line-row { display: grid; grid-template-columns: 80px 60px 70px 70px 50px 50px 80px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; }
+        .pump-line-row.header { font-weight: 700; color: #a0aec0; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid rgba(255,255,255,0.1); }
+        .pump-line-row .pdp-value { font-weight: 800; color: #00d4ff; font-size: 1rem; }
+
+        /* Water Monitor Grid */
+        .water-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+        .water-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; position: relative; }
+        .water-card.critical { border-color: rgba(231,76,60,0.4); background: rgba(231,76,60,0.05); }
+        .water-card.warning { border-color: rgba(243,156,18,0.3); background: rgba(243,156,18,0.03); }
+        .water-card.good { border-color: rgba(46,204,113,0.2); }
+        .water-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .water-card-unit { font-weight: 800; font-size: 1rem; color: #e2e8f0; }
+        .water-gauge-mini { width: 100%; height: 12px; background: #2d3748; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+        .water-gauge-fill { height: 100%; border-radius: 6px; transition: width 1s; }
+        .water-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+        .water-stat-val { font-weight: 800; font-size: 1.1rem; }
+        .water-stat-lbl { font-size: 0.65rem; color: #a0aec0; text-transform: uppercase; margin-top: 2px; }
+        .water-timer-mini { font-size: 1.4rem; font-weight: 900; font-family: 'Courier New', monospace; }
+
+        /* Hydrant Upload */
+        .upload-zone { border: 2px dashed rgba(255,255,255,0.15); border-radius: 14px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .upload-zone:hover { border-color: #f1c40f; background: rgba(241,196,15,0.03); }
+        .upload-zone .upload-icon { font-size: 3rem; margin-bottom: 10px; }
+        .upload-zone .upload-text { font-size: 0.9rem; color: #a0aec0; }
+        .upload-zone .upload-formats { font-size: 0.75rem; color: #718096; margin-top: 6px; }
+
+        /* Order History */
+        .order-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; margin-bottom: 8px; }
+        .order-row .order-unit { font-weight: 800; color: #e2e8f0; min-width: 80px; }
+        .order-row .order-desc { flex: 1; font-size: 0.85rem; color: #a0aec0; }
+        .order-row .order-status { padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
+        .order-row .order-status.sent { background: rgba(52,152,219,0.15); color: #3498db; }
+        .order-row .order-status.ack { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .order-row .order-status.in-progress { background: rgba(243,156,18,0.15); color: #f39c12; }
+        .order-row .order-status.complete { background: rgba(46,204,113,0.1); color: rgba(46,204,113,0.6); }
+
+        /* Sector Assignment Tags */
+        .sector-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; margin: 2px; }
+        .sector-tag.sector-a { background: rgba(231,76,60,0.12); color: #e74c3c; }
+        .sector-tag.sector-b { background: rgba(52,152,219,0.12); color: #3498db; }
+        .sector-tag.sector-c { background: rgba(46,204,113,0.12); color: #2ecc71; }
+        .sector-tag.sector-d { background: rgba(155,89,182,0.12); color: #9b59b6; }
+        .sector-tag.sector-roof { background: rgba(243,156,18,0.12); color: #f39c12; }
+        .sector-tag.sector-interior { background: rgba(241,196,15,0.12); color: #f1c40f; }
+
+        /* Benchmarks */
+        .benchmark-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .benchmark-time { font-family: 'Courier New', monospace; font-size: 0.85rem; color: #00d4ff; min-width: 70px; font-weight: 700; }
+        .benchmark-event { font-size: 0.85rem; color: #e2e8f0; }
+        .benchmark-item.pending .benchmark-time { color: #718096; }
+        .benchmark-item.pending .benchmark-event { color: #718096; }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+    <!-- Header -->
+    <header class="header cmd-header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">⭐</div>
+                <div>
+                    <div class="logo-text">EmergencyOS</div>
+                    <div style="font-size:0.65rem;color:#f1c40f;font-weight:600;">INCIDENT COMMAND</div>
+                </div>
+            </div>
+        </div>
+        <div class="call-banner active" style="border-color:rgba(241,196,15,0.3);background:rgba(241,196,15,0.08);">
+            <span class="call-banner-icon">🚨</span>
+            <span class="call-banner-text">STRUCTURE FIRE — 2ND ALARM — 742 Oakwood Drive — Box 47-12 — IC: Chief Williams</span>
+            <span class="call-timer" id="callTimer">00:18:42</span>
+        </div>
+        <div class="header-right">
+            <span id="clock" style="color:#a0aec0;font-family:'Courier New',monospace;font-size:0.9rem;"></span>
+            <div class="user-badge">
+                <div class="user-avatar" style="background:linear-gradient(135deg,#f1c40f,#f39c12);color:#1a1a2e;">CW</div>
+                <div>
+                    <div style="font-weight:700;font-size:0.85rem;">Chief Williams</div>
+                    <div style="font-size:0.65rem;color:#f1c40f;">BC-2 — Incident Commander</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar with BUTTON Navigation -->
+    <nav class="sidebar">
+        <div class="nav-section">
+            <div class="nav-section-title">COMMAND</div>
+            <button class="nav-btn active" data-page="dashboard">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Command Board</span>
+            </button>
+            <button class="nav-btn" data-page="tactical">
+                <span class="nav-icon">🎯</span>
+                <span class="nav-label">Tactical Assignments</span>
+                <span class="nav-badge" style="background:#f1c40f;color:#1a1a2e;">6</span>
+            </button>
+            <button class="nav-btn" data-page="sectors">
+                <span class="nav-icon">🏗️</span>
+                <span class="nav-label">Sector Map</span>
+            </button>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">PUMP OPS</div>
+            <button class="nav-btn" data-page="pumpops">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Pump Operations</span>
+            </button>
+            <button class="nav-btn" data-page="water">
+                <span class="nav-icon">💧</span>
+                <span class="nav-label">Water Supply</span>
+                <span class="nav-badge" style="background:#e74c3c;">1 ⚠️</span>
+            </button>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">RESOURCES</div>
+            <button class="nav-btn" data-page="hydrants">
+                <span class="nav-icon">🚿</span>
+                <span class="nav-label">Hydrant Management</span>
+            </button>
+            <button class="nav-btn" data-page="par">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">PAR — All Units</span>
+                <span class="nav-badge" style="background:#2ecc71;">OK</span>
+            </button>
+            <button class="nav-btn" data-page="commslog">
+                <span class="nav-icon">📡</span>
+                <span class="nav-label">Comms Log</span>
+            </button>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">LINKS</div>
+            <a href="index.html" class="nav-btn link-btn" style="text-decoration:none;">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Main Hub</span>
+            </a>
+            <a href="fire.html" class="nav-btn link-btn" style="text-decoration:none;">
+                <span class="nav-icon">🔥</span>
+                <span class="nav-label">Fire Ops</span>
+            </a>
+            <a href="ems.html" class="nav-btn link-btn" style="text-decoration:none;">
+                <span class="nav-icon">🚑</span>
+                <span class="nav-label">EMS Ops</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- ==================== COMMAND DASHBOARD ==================== -->
+        <div id="page-dashboard" class="page active">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                <h2 style="color:#e2e8f0;">⭐ Incident Command Board</h2>
+                <span class="tag" style="background:rgba(241,196,15,0.15);color:#f1c40f;font-weight:700;">2ND ALARM</span>
+                <span class="tag" style="background:rgba(231,76,60,0.15);color:#e74c3c;">WORKING FIRE</span>
+            </div>
+
+            <!-- Tactical Priorities -->
+            <div class="grid grid-4" style="margin-bottom:20px;">
+                <div class="card" style="border-top:3px solid #e74c3c;">
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:0.7rem;color:#a0aec0;text-transform:uppercase;letter-spacing:1px;">Life Safety</div>
+                        <div style="font-size:1.5rem;font-weight:900;color:#f39c12;margin-top:4px;">IN PROGRESS</div>
+                        <div style="font-size:0.75rem;color:#a0aec0;margin-top:4px;">Primary search — L3 on 2nd floor</div>
+                    </div>
+                </div>
+                <div class="card" style="border-top:3px solid #f39c12;">
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:0.7rem;color:#a0aec0;text-transform:uppercase;letter-spacing:1px;">Fire Control</div>
+                        <div style="font-size:1.5rem;font-weight:900;color:#e74c3c;margin-top:4px;">ACTIVE ATTACK</div>
+                        <div style="font-size:0.75rem;color:#a0aec0;margin-top:4px;">E7 attack A-side, 1st floor</div>
+                    </div>
+                </div>
+                <div class="card" style="border-top:3px solid #2ecc71;">
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:0.7rem;color:#a0aec0;text-transform:uppercase;letter-spacing:1px;">PAR Status</div>
+                        <div style="font-size:1.5rem;font-weight:900;color:#2ecc71;margin-top:4px;">ALL CLEAR</div>
+                        <div style="font-size:0.75rem;color:#a0aec0;margin-top:4px;">22/22 personnel accounted</div>
+                    </div>
+                </div>
+                <div class="card" style="border-top:3px solid #3498db;">
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:0.7rem;color:#a0aec0;text-transform:uppercase;letter-spacing:1px;">Water Supply</div>
+                        <div style="font-size:1.5rem;font-weight:900;color:#f39c12;margin-top:4px;">⚠️ E7 LOW</div>
+                        <div style="font-size:0.75rem;color:#a0aec0;margin-top:4px;">1 of 4 units on tank only</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Responding Units -->
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header">
+                    <h3>🚒 Responding Units</h3>
+                    <span class="tag" style="background:rgba(0,212,255,0.15);color:#00d4ff;">6 Units — 22 Personnel</span>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-2" style="gap:12px;">
+                        <!-- Engine 7 -->
+                        <div class="unit-card selected">
+                            <div class="unit-header">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="unit-id">🚒 Engine 7</span>
+                                    <span class="unit-type-badge engine">Engine</span>
+                                </div>
+                                <span class="unit-status-badge on-scene">ON SCENE</span>
+                            </div>
+                            <div class="unit-meta">OIC: Lt. Rodriguez • Crew: 4 • 1st Due Attack</div>
+                            <div class="unit-stats">
+                                <div class="unit-stat">💧 <span class="unit-stat-value" style="color:#f39c12;">480/750 gal</span> <div class="unit-water-bar"><div class="unit-water-fill" style="width:64%;background:#f39c12;"></div></div></div>
+                                <div class="unit-stat">🔥 <span class="unit-stat-value" style="color:#2ecc71;">185 GPM</span></div>
+                                <div class="unit-stat">⏱️ <span class="unit-stat-value" style="color:#f39c12;">2:36</span></div>
+                                <div class="unit-stat">👥 <span class="unit-stat-value" style="color:#2ecc71;">4/4</span></div>
+                            </div>
+                            <div style="margin-top:8px;">
+                                <span class="sector-tag sector-a">A-SIDE</span>
+                                <span class="sector-tag sector-interior">INTERIOR ATTACK</span>
+                            </div>
+                        </div>
+                        <!-- Engine 12 -->
+                        <div class="unit-card">
+                            <div class="unit-header">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="unit-id">🚒 Engine 12</span>
+                                    <span class="unit-type-badge engine">Engine</span>
+                                </div>
+                                <span class="unit-status-badge on-scene">ON SCENE</span>
+                            </div>
+                            <div class="unit-meta">OIC: Lt. Chen • Crew: 4 • 2nd Due — Water Supply</div>
+                            <div class="unit-stats">
+                                <div class="unit-stat">💧 <span class="unit-stat-value" style="color:#2ecc71;">750/750 gal</span> <div class="unit-water-bar"><div class="unit-water-fill" style="width:100%;background:#2ecc71;"></div></div></div>
+                                <div class="unit-stat">🔥 <span class="unit-stat-value" style="color:#a0aec0;">0 GPM</span></div>
+                                <div class="unit-stat">🚿 <span class="unit-stat-value" style="color:#2ecc71;">HYDRANT</span></div>
+                                <div class="unit-stat">👥 <span class="unit-stat-value" style="color:#2ecc71;">4/4</span></div>
+                            </div>
+                            <div style="margin-top:8px;">
+                                <span class="sector-tag sector-a">A-SIDE</span>
+                                <span class="sector-tag" style="background:rgba(52,152,219,0.12);color:#3498db;">WATER SUPPLY — HYD-0449</span>
+                            </div>
+                        </div>
+                        <!-- Ladder 3 -->
+                        <div class="unit-card">
+                            <div class="unit-header">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="unit-id">🪜 Ladder 3</span>
+                                    <span class="unit-type-badge ladder">Ladder</span>
+                                </div>
+                                <span class="unit-status-badge on-scene">ON SCENE</span>
+                            </div>
+                            <div class="unit-meta">OIC: Capt. Morrison • Crew: 6 • Truck Ops / Ventilation</div>
+                            <div class="unit-stats">
+                                <div class="unit-stat">💧 <span class="unit-stat-value" style="color:#2ecc71;">300/300 gal</span> <div class="unit-water-bar"><div class="unit-water-fill" style="width:100%;background:#2ecc71;"></div></div></div>
+                                <div class="unit-stat">🪜 <span class="unit-stat-value" style="color:#00d4ff;">Aerial: C-side</span></div>
+                                <div class="unit-stat">👥 <span class="unit-stat-value" style="color:#2ecc71;">6/6</span></div>
+                            </div>
+                            <div style="margin-top:8px;">
+                                <span class="sector-tag sector-b">B-SIDE VES</span>
+                                <span class="sector-tag sector-c">C-SIDE AERIAL</span>
+                                <span class="sector-tag sector-roof">ROOF VENT</span>
+                            </div>
+                        </div>
+                        <!-- Engine 15 -->
+                        <div class="unit-card">
+                            <div class="unit-header">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="unit-id">🚒 Engine 15</span>
+                                    <span class="unit-type-badge engine">Engine</span>
+                                </div>
+                                <span class="unit-status-badge on-scene">ON SCENE</span>
+                            </div>
+                            <div class="unit-meta">OIC: Lt. Patel • Crew: 4 • 2nd Alarm — Exposure</div>
+                            <div class="unit-stats">
+                                <div class="unit-stat">💧 <span class="unit-stat-value" style="color:#2ecc71;">600/750 gal</span> <div class="unit-water-bar"><div class="unit-water-fill" style="width:80%;background:#2ecc71;"></div></div></div>
+                                <div class="unit-stat">🔥 <span class="unit-stat-value" style="color:#2ecc71;">150 GPM</span></div>
+                                <div class="unit-stat">🚿 <span class="unit-stat-value" style="color:#2ecc71;">HYDRANT</span></div>
+                                <div class="unit-stat">👥 <span class="unit-stat-value" style="color:#2ecc71;">4/4</span></div>
+                            </div>
+                            <div style="margin-top:8px;">
+                                <span class="sector-tag sector-b">B-SIDE EXPOSURE</span>
+                            </div>
+                        </div>
+                        <!-- Rescue 1 -->
+                        <div class="unit-card">
+                            <div class="unit-header">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="unit-id">🚑 Rescue 1</span>
+                                    <span class="unit-type-badge rescue">Rescue</span>
+                                </div>
+                                <span class="unit-status-badge on-scene">ON SCENE</span>
+                            </div>
+                            <div class="unit-meta">OIC: Lt. Davis • Crew: 2 • RIT Standby</div>
+                            <div class="unit-stats">
+                                <div class="unit-stat">🆘 <span class="unit-stat-value" style="color:#e74c3c;">RIT STANDBY</span></div>
+                                <div class="unit-stat">👥 <span class="unit-stat-value" style="color:#2ecc71;">2/2</span></div>
+                            </div>
+                            <div style="margin-top:8px;">
+                                <span class="sector-tag sector-a">A-SIDE RIT</span>
+                            </div>
+                        </div>
+                        <!-- BC-2 -->
+                        <div class="unit-card">
+                            <div class="unit-header">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="unit-id">⭐ BC-2</span>
+                                    <span class="unit-type-badge bc">Command</span>
+                                </div>
+                                <span class="unit-status-badge on-scene">ON SCENE</span>
+                            </div>
+                            <div class="unit-meta">Chief Williams • INCIDENT COMMANDER</div>
+                            <div class="unit-stats">
+                                <div class="unit-stat">📍 <span class="unit-stat-value" style="color:#f1c40f;">CMD POST — A/D Corner</span></div>
+                                <div class="unit-stat">👥 <span class="unit-stat-value" style="color:#2ecc71;">2/2</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benchmarks -->
+            <div class="card">
+                <div class="card-header"><h3>🏁 Incident Benchmarks</h3></div>
+                <div class="card-body">
+                    <div class="benchmark-item"><div class="benchmark-time">14:18:00</div><div class="benchmark-event">📡 Dispatch — Box 47-12 1st Alarm</div></div>
+                    <div class="benchmark-item"><div class="benchmark-time">14:22:00</div><div class="benchmark-event">🚨 2nd Alarm requested — heavy fire conditions</div></div>
+                    <div class="benchmark-item"><div class="benchmark-time">14:24:00</div><div class="benchmark-event">🚒 Engine 7 on scene — IC established (Chief Williams)</div></div>
+                    <div class="benchmark-item"><div class="benchmark-time">14:25:30</div><div class="benchmark-event">💧 Water supply established (E12 → HYD-0449)</div></div>
+                    <div class="benchmark-item"><div class="benchmark-time">14:26:30</div><div class="benchmark-event">🔥 Interior attack initiated — E7, A-side 1st floor</div></div>
+                    <div class="benchmark-item"><div class="benchmark-time">14:28:00</div><div class="benchmark-event">✅ PAR — All units accounted (22/22)</div></div>
+                    <div class="benchmark-item"><div class="benchmark-time">14:30:15</div><div class="benchmark-event">🔥 Fire knocked 1st floor — checking extension</div></div>
+                    <div class="benchmark-item pending"><div class="benchmark-time">--:--</div><div class="benchmark-event">🔍 Primary search — ALL CLEAR (pending)</div></div>
+                    <div class="benchmark-item pending"><div class="benchmark-time">--:--</div><div class="benchmark-event">🔥 Fire under control (pending)</div></div>
+                    <div class="benchmark-item pending"><div class="benchmark-time">--:--</div><div class="benchmark-event">✋ Loss stopped (pending)</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TACTICAL ASSIGNMENTS ==================== -->
+        <div id="page-tactical" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">🎯 Tactical Assignments</h2>
+
+            <!-- Assignment Builder -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header"><h3>📝 New Assignment</h3></div>
+                <div class="card-body">
+                    <div class="assign-form">
+                        <div>
+                            <label>Unit</label>
+                            <select id="assignUnit" onchange="updatePreview()">
+                                <option value="Engine 7">Engine 7</option>
+                                <option value="Engine 12">Engine 12</option>
+                                <option value="Ladder 3">Ladder 3</option>
+                                <option value="Engine 15">Engine 15</option>
+                                <option value="Rescue 1">Rescue 1</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Assignment Type</label>
+                            <select id="assignType" onchange="updateAssignFields();updatePreview();">
+                                <option value="hose">Hose Line Deployment</option>
+                                <option value="ladder">Ladder Placement</option>
+                                <option value="search">Search</option>
+                                <option value="vent">Ventilation</option>
+                                <option value="rit">RIT Standby</option>
+                                <option value="exposure">Exposure Protection</option>
+                                <option value="water">Water Supply</option>
+                                <option value="salvage">Salvage/Overhaul</option>
+                                <option value="rehab">Rehab</option>
+                                <option value="staging">Staging</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Building Side</label>
+                            <select id="assignSide" onchange="updatePreview()">
+                                <option value="A">A-Side (Front)</option>
+                                <option value="B">B-Side (Left)</option>
+                                <option value="C">C-Side (Rear)</option>
+                                <option value="D">D-Side (Right)</option>
+                                <option value="Interior">Interior</option>
+                                <option value="Roof">Roof</option>
+                            </select>
+                        </div>
+                        <!-- Hose-specific fields -->
+                        <div id="hoseFields">
+                            <label>Hose Diameter</label>
+                            <select id="assignDiam" onchange="updatePreview()">
+                                <option value="1¾"">1¾" Attack</option>
+                                <option value="2½"">2½" Heavy</option>
+                                <option value="3"">3" Supply</option>
+                            </select>
+                        </div>
+                        <div id="hoseFields2">
+                            <label>Floor Level</label>
+                            <select id="assignFloor" onchange="updatePreview()">
+                                <option value="Basement">Basement</option>
+                                <option value="1st floor">1st Floor</option>
+                                <option value="2nd floor" selected>2nd Floor</option>
+                                <option value="3rd floor">3rd Floor</option>
+                                <option value="Attic">Attic</option>
+                            </select>
+                        </div>
+                        <div id="hoseFields3">
+                            <label>Flow Rate (GPM)</label>
+                            <select id="assignGPM" onchange="updatePreview()">
+                                <option value="150">150 GPM</option>
+                                <option value="185" selected>185 GPM</option>
+                                <option value="200">200 GPM</option>
+                                <option value="250">250 GPM</option>
+                                <option value="325">325 GPM</option>
+                            </select>
+                        </div>
+                        <!-- Ladder-specific fields (hidden by default) -->
+                        <div id="ladderFields" style="display:none;">
+                            <label>Ladder Size</label>
+                            <select id="assignLadder" onchange="updatePreview()">
+                                <option value="12' folding">12' Folding</option>
+                                <option value="14' roof">14' Roof</option>
+                                <option value="16' extension">16' Extension</option>
+                                <option value="20' extension">20' Extension</option>
+                                <option value="24' extension" selected>24' Extension</option>
+                                <option value="28' extension">28' Extension</option>
+                                <option value="35' extension">35' Extension</option>
+                                <option value="Aerial platform">Aerial Platform</option>
+                            </select>
+                        </div>
+                        <div id="ladderFields2" style="display:none;">
+                            <label>Purpose</label>
+                            <select id="assignLadderPurpose" onchange="updatePreview()">
+                                <option value="Rescue">Rescue</option>
+                                <option value="Vent">Ventilation</option>
+                                <option value="Egress">Egress</option>
+                                <option value="Access">Access</option>
+                                <option value="VES">VES</option>
+                            </select>
+                        </div>
+                        <div id="ladderFields3" style="display:none;">
+                            <label>Placement</label>
+                            <input type="text" id="assignLadderPlacement" placeholder="e.g., 2nd floor window B/C corner" onkeyup="updatePreview()">
+                        </div>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="assign-preview">
+                        <div style="font-size:0.75rem;color:#f1c40f;font-weight:700;margin-bottom:8px;">📋 ORDER PREVIEW</div>
+                        <div class="assign-preview-text" id="orderPreview">
+                            ENGINE 7: Deploy 1¾" attack line to A-side, 2nd floor — 185 GPM
+                        </div>
+                    </div>
+                    <button class="send-order-btn" onclick="sendOrder()">📡 Send Order to Unit</button>
+                </div>
+            </div>
+
+            <!-- Active Assignments -->
+            <div class="card">
+                <div class="card-header"><h3>📋 Active Assignments</h3></div>
+                <div class="card-body">
+                    <div class="order-row">
+                        <div class="order-unit" style="color:#e74c3c;">🚒 E7</div>
+                        <div class="order-desc">Deploy 1¾" attack line → A-side, 1st floor — 185 GPM fire attack</div>
+                        <span class="order-status in-progress">IN PROGRESS</span>
+                        <span style="font-size:0.7rem;color:#a0aec0;">14:26</span>
+                    </div>
+                    <div class="order-row">
+                        <div class="order-unit" style="color:#e74c3c;">🚒 E7</div>
+                        <div class="order-desc">Deploy 2½" backup line → A-side, 1st floor — Standby</div>
+                        <span class="order-status ack">ACKNOWLEDGED</span>
+                        <span style="font-size:0.7rem;color:#a0aec0;">14:26</span>
+                    </div>
+                    <div class="order-row">
+                        <div class="order-unit" style="color:#e74c3c;">🚒 E12</div>
+                        <div class="order-desc">Secure water supply from HYD-0449 (Elm & Maple)</div>
+                        <span class="order-status complete">COMPLETE</span>
+                        <span style="font-size:0.7rem;color:#a0aec0;">14:22</span>
+                    </div>
+                    <div class="order-row">
+                        <div class="order-unit" style="color:#3498db;">🪜 L3</div>
+                        <div class="order-desc">Position aerial C-side for roof access. Vertical vent.</div>
+                        <span class="order-status in-progress">IN PROGRESS</span>
+                        <span style="font-size:0.7rem;color:#a0aec0;">14:25</span>
+                    </div>
+                    <div class="order-row">
+                        <div class="order-unit" style="color:#3498db;">🪜 L3</div>
+                        <div class="order-desc">Raise 24' extension → B-side 2nd floor window for VES</div>
+                        <span class="order-status in-progress">IN PROGRESS</span>
+                        <span style="font-size:0.7rem;color:#a0aec0;">14:26</span>
+                    </div>
+                    <div class="order-row">
+                        <div class="order-unit" style="color:#e74c3c;">🚒 E15</div>
+                        <div class="order-desc">Deploy 1¾" exposure line → B-side, protecting 744 Oakwood</div>
+                        <span class="order-status in-progress">IN PROGRESS</span>
+                        <span style="font-size:0.7rem;color:#a0aec0;">14:28</span>
+                    </div>
+                    <div class="order-row">
+                        <div class="order-unit" style="color:#2ecc71;">🚑 R1</div>
+                        <div class="order-desc">RIT standby — A-side, tools ready, SCBA on air</div>
+                        <span class="order-status ack">STANDING BY</span>
+                        <span style="font-size:0.7rem;color:#a0aec0;">14:24</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SECTOR MAP ==================== -->
+        <div id="page-sectors" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">🏗️ Sector / Division Map</h2>
+
+            <div class="card">
+                <div class="card-header"><h3>🏠 742 Oakwood Drive — 2-Story Wood Frame</h3></div>
+                <div class="card-body">
+                    <div class="building-diagram">
+                        <!-- Building layout grid -->
+                        <div style="display:grid;grid-template-columns:120px 1fr 120px;grid-template-rows:100px 1fr 100px;gap:8px;max-width:600px;margin:0 auto;">
+                            <!-- Top row -->
+                            <div></div>
+                            <div class="building-side" style="border-color:rgba(231,76,60,0.3);">
+                                <div class="side-label" style="color:#e74c3c;">A — FRONT</div>
+                                <div class="side-units">🚒 E7 (Attack) • 🚑 R1 (RIT) • ⭐ BC-2 (CMD)</div>
+                                <div style="font-size:0.65rem;color:#718096;margin-top:2px;">📍 Oakwood Drive (address side)</div>
+                            </div>
+                            <div></div>
+                            <!-- Middle row -->
+                            <div class="building-side" style="border-color:rgba(52,152,219,0.3);">
+                                <div class="side-label" style="color:#3498db;">B</div>
+                                <div style="font-size:0.7rem;color:#a0aec0;">LEFT</div>
+                                <div class="side-units">🪜 L3 (VES)<br>🚒 E15 (Exposure)</div>
+                            </div>
+                            <div class="building-center">
+                                <div class="fire-icon">🔥🏠🔥</div>
+                                <div class="addr">742 Oakwood Dr</div>
+                                <div style="font-size:0.7rem;color:#a0aec0;margin-top:4px;">Type V — 2 Story<br>30' × 40' footprint</div>
+                                <div style="margin-top:8px;font-size:0.7rem;">
+                                    <div style="color:#e74c3c;font-weight:700;">🔥 Fire: 1st floor A/B corner</div>
+                                    <div style="color:#f39c12;">⚠️ Extension check: 2nd floor</div>
+                                </div>
+                            </div>
+                            <div class="building-side" style="border-color:rgba(155,89,182,0.3);">
+                                <div class="side-label" style="color:#9b59b6;">D</div>
+                                <div style="font-size:0.7rem;color:#a0aec0;">RIGHT</div>
+                                <div class="side-units">— Unassigned —</div>
+                            </div>
+                            <!-- Bottom row -->
+                            <div></div>
+                            <div class="building-side" style="border-color:rgba(46,204,113,0.3);">
+                                <div class="side-label" style="color:#2ecc71;">C — REAR</div>
+                                <div class="side-units">🪜 L3 (Aerial positioned)</div>
+                                <div style="font-size:0.65rem;color:#718096;margin-top:2px;">Back yard — fenced</div>
+                            </div>
+                            <div></div>
+                        </div>
+
+                        <!-- Roof -->
+                        <div style="text-align:center;margin-top:16px;">
+                            <div class="building-side" style="max-width:300px;margin:0 auto;border-color:rgba(243,156,18,0.3);">
+                                <div class="side-label" style="color:#f39c12;">ROOF</div>
+                                <div class="side-units">🪜 L3 crew — vertical vent in progress</div>
+                            </div>
+                        </div>
+
+                        <!-- Interior Divisions -->
+                        <div style="margin-top:20px;">
+                            <h4 style="color:#e2e8f0;margin-bottom:12px;">Interior Divisions</h4>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                <div class="building-side" style="border-color:rgba(241,196,15,0.3);">
+                                    <div class="side-label" style="color:#f1c40f;font-size:1rem;">Division 1 — 1st Floor</div>
+                                    <div class="side-units">🚒 E7 — Interior attack, A-side entry<br>🔥 Fire knocked — checking extension</div>
+                                </div>
+                                <div class="building-side" style="border-color:rgba(241,196,15,0.3);">
+                                    <div class="side-label" style="color:#f1c40f;font-size:1rem;">Division 2 — 2nd Floor</div>
+                                    <div class="side-units">🪜 L3 crew — Primary search + extension check<br>⚠️ Smoke conditions heavy</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PUMP OPERATIONS ==================== -->
+        <div id="page-pumpops" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">⚙️ Pump Operations — All Units</h2>
+
+            <!-- Engine 7 -->
+            <div class="pump-card" style="border-left:4px solid #e74c3c;">
+                <div class="pump-card-header">
+                    <div class="pump-card-title">🚒 Engine 7 — Pump Panel</div>
+                    <div style="display:flex;gap:8px;">
+                        <span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">PUMP ENGAGED</span>
+                        <span class="tag" style="background:rgba(243,156,18,0.15);color:#f39c12;">TANK SUPPLY</span>
+                    </div>
+                </div>
+                <div class="pump-line-row header">
+                    <span>Line</span><span>Hose</span><span>Length</span><span>GPM</span><span>NP</span><span>EL</span><span>PDP</span>
+                </div>
+                <div class="pump-line-row">
+                    <span style="color:#2ecc71;font-weight:700;">Line 1</span>
+                    <span>1¾"</span><span>200 ft</span>
+                    <span style="color:#00d4ff;font-weight:700;">185</span>
+                    <span>50</span><span>0</span>
+                    <span class="pdp-value">156</span>
+                </div>
+                <div class="pump-line-row">
+                    <span style="color:#f39c12;font-weight:700;">Line 2</span>
+                    <span>2½"</span><span>150 ft</span>
+                    <span style="color:#a0aec0;">0 (standby)</span>
+                    <span>50</span><span>0</span>
+                    <span class="pdp-value">69</span>
+                </div>
+                <div style="margin-top:10px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.8rem;color:#a0aec0;">Total Flow: <strong style="color:#00d4ff;">185 GPM</strong></span>
+                    <span style="font-size:0.8rem;color:#f39c12;font-weight:700;">⚠️ Tank: 480 gal — 2:36 remaining</span>
+                </div>
+            </div>
+
+            <!-- Engine 12 -->
+            <div class="pump-card" style="border-left:4px solid #2ecc71;">
+                <div class="pump-card-header">
+                    <div class="pump-card-title">🚒 Engine 12 — Pump Panel</div>
+                    <div style="display:flex;gap:8px;">
+                        <span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">PUMP ENGAGED</span>
+                        <span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">HYDRANT SUPPLY</span>
+                    </div>
+                </div>
+                <div class="pump-line-row header">
+                    <span>Line</span><span>Hose</span><span>Length</span><span>GPM</span><span>NP</span><span>EL</span><span>PDP</span>
+                </div>
+                <div class="pump-line-row">
+                    <span style="color:#2ecc71;font-weight:700;">Supply</span>
+                    <span>5" LDH</span><span>300 ft</span>
+                    <span style="color:#00d4ff;font-weight:700;">—</span>
+                    <span>—</span><span>—</span>
+                    <span style="color:#a0aec0;">Relay to E7</span>
+                </div>
+                <div style="margin-top:10px;padding:10px;background:rgba(46,204,113,0.05);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.8rem;color:#a0aec0;">Source: <strong style="color:#2ecc71;">HYD-0449 (1,100 GPM / 60 PSI)</strong></span>
+                    <span style="font-size:0.8rem;color:#2ecc71;font-weight:700;">✅ Unlimited Supply</span>
+                </div>
+            </div>
+
+            <!-- Engine 15 -->
+            <div class="pump-card" style="border-left:4px solid #2ecc71;">
+                <div class="pump-card-header">
+                    <div class="pump-card-title">🚒 Engine 15 — Pump Panel</div>
+                    <div style="display:flex;gap:8px;">
+                        <span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">PUMP ENGAGED</span>
+                        <span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">HYDRANT SUPPLY</span>
+                    </div>
+                </div>
+                <div class="pump-line-row header">
+                    <span>Line</span><span>Hose</span><span>Length</span><span>GPM</span><span>NP</span><span>EL</span><span>PDP</span>
+                </div>
+                <div class="pump-line-row">
+                    <span style="color:#2ecc71;font-weight:700;">Line 1</span>
+                    <span>1¾"</span><span>150 ft</span>
+                    <span style="color:#00d4ff;font-weight:700;">150</span>
+                    <span>100</span><span>0</span>
+                    <span class="pdp-value">135</span>
+                </div>
+                <div style="margin-top:10px;padding:10px;background:rgba(46,204,113,0.05);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.8rem;color:#a0aec0;">Source: <strong style="color:#2ecc71;">HYD-0447 (1,200 GPM / 65 PSI)</strong></span>
+                    <span style="font-size:0.8rem;color:#2ecc71;font-weight:700;">✅ Unlimited Supply</span>
+                </div>
+            </div>
+
+            <!-- Friction Loss Reference -->
+            <div class="card" style="margin-top:16px;">
+                <div class="card-header"><h3>📊 Friction Loss Quick Reference (per 100 ft)</h3></div>
+                <div class="card-body">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Hose</th><th>100 GPM</th><th>150 GPM</th><th>185 GPM</th><th>200 GPM</th><th>250 GPM</th><th>300 GPM</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td style="font-weight:700;">1¾"</td><td>15.5</td><td>34.9</td><td style="color:#00d4ff;font-weight:700;">53.1</td><td>62.0</td><td>96.9</td><td>139.5</td></tr>
+                            <tr><td style="font-weight:700;">2½"</td><td>2.0</td><td>4.5</td><td>6.8</td><td>8.0</td><td style="color:#00d4ff;font-weight:700;">12.5</td><td>18.0</td></tr>
+                            <tr><td style="font-weight:700;">3"</td><td>0.8</td><td>1.8</td><td>2.7</td><td>3.2</td><td>5.0</td><td>7.2</td></tr>
+                            <tr><td style="font-weight:700;">5" LDH</td><td>0.08</td><td>0.18</td><td>0.27</td><td>0.32</td><td>0.50</td><td>0.72</td></tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top:10px;font-size:0.75rem;color:#a0aec0;">
+                        Formula: FL = C × (Q/100)² per 100 ft &nbsp;|&nbsp; PDP = NP + FL + EL (5 PSI/floor) + AFL (25 PSI/appliance)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== WATER SUPPLY MONITOR ==================== -->
+        <div id="page-water" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">💧 Water Supply — All Units</h2>
+
+            <!-- Aggregate -->
+            <div class="grid grid-4" style="margin-bottom:20px;">
+                <div class="card">
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:2rem;font-weight:900;color:#00d4ff;">335 GPM</div>
+                        <div style="font-size:0.75rem;color:#a0aec0;">Total Flow — All Units</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:2rem;font-weight:900;color:#f39c12;">2,130 gal</div>
+                        <div style="font-size:0.75rem;color:#a0aec0;">Total Tank Water</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:2rem;font-weight:900;color:#2ecc71;">3 / 4</div>
+                        <div style="font-size:0.75rem;color:#a0aec0;">Units on Hydrant</div>
+                    </div>
+                </div>
+                <div class="card" style="border:1px solid rgba(231,76,60,0.3);">
+                    <div class="card-body" style="text-align:center;">
+                        <div style="font-size:2rem;font-weight:900;color:#e74c3c;">1 ⚠️</div>
+                        <div style="font-size:0.75rem;color:#a0aec0;">Units on Tank Only</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Per-Unit Water Cards -->
+            <div class="water-grid">
+                <!-- Engine 7 - WARNING -->
+                <div class="water-card warning">
+                    <div class="water-card-header">
+                        <span class="water-card-unit">🚒 Engine 7</span>
+                        <span class="tag" style="background:rgba(243,156,18,0.15);color:#f39c12;">⚠️ TANK ONLY</span>
+                    </div>
+                    <div class="water-gauge-mini">
+                        <div class="water-gauge-fill" style="width:64%;background:linear-gradient(90deg,#e67e22,#f39c12);"></div>
+                    </div>
+                    <div class="water-stats">
+                        <div><div class="water-stat-val" style="color:#f39c12;">480 gal</div><div class="water-stat-lbl">Remaining</div></div>
+                        <div><div class="water-stat-val" style="color:#00d4ff;">185 GPM</div><div class="water-stat-lbl">Flow</div></div>
+                        <div><div class="water-timer-mini" style="color:#f39c12;">02:36</div><div class="water-stat-lbl">Time Left</div></div>
+                    </div>
+                    <div style="margin-top:10px;padding:8px;background:rgba(243,156,18,0.08);border-radius:8px;font-size:0.75rem;color:#f39c12;text-align:center;font-weight:700;">
+                        ⚠️ Connect to HYD-0447 (180 ft away) before opening backup line
+                    </div>
+                </div>
+                <!-- Engine 12 - GOOD -->
+                <div class="water-card good">
+                    <div class="water-card-header">
+                        <span class="water-card-unit">🚒 Engine 12</span>
+                        <span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">✅ HYDRANT</span>
+                    </div>
+                    <div class="water-gauge-mini">
+                        <div class="water-gauge-fill" style="width:100%;background:#2ecc71;"></div>
+                    </div>
+                    <div class="water-stats">
+                        <div><div class="water-stat-val" style="color:#2ecc71;">750 gal</div><div class="water-stat-lbl">Tank Full</div></div>
+                        <div><div class="water-stat-val" style="color:#a0aec0;">0 GPM</div><div class="water-stat-lbl">Flow</div></div>
+                        <div><div class="water-timer-mini" style="color:#2ecc71;">∞</div><div class="water-stat-lbl">Unlimited</div></div>
+                    </div>
+                    <div style="margin-top:10px;font-size:0.75rem;color:#2ecc71;text-align:center;">
+                        🚿 HYD-0449 — 1,100 GPM available
+                    </div>
+                </div>
+                <!-- Ladder 3 -->
+                <div class="water-card good">
+                    <div class="water-card-header">
+                        <span class="water-card-unit">🪜 Ladder 3</span>
+                        <span class="tag" style="background:rgba(52,152,219,0.15);color:#3498db;">TRUCK OPS</span>
+                    </div>
+                    <div class="water-gauge-mini">
+                        <div class="water-gauge-fill" style="width:100%;background:#2ecc71;"></div>
+                    </div>
+                    <div class="water-stats">
+                        <div><div class="water-stat-val" style="color:#2ecc71;">300 gal</div><div class="water-stat-lbl">Full</div></div>
+                        <div><div class="water-stat-val" style="color:#a0aec0;">0 GPM</div><div class="water-stat-lbl">Not Flowing</div></div>
+                        <div><div class="water-timer-mini" style="color:#2ecc71;">N/A</div><div class="water-stat-lbl">Truck Ops</div></div>
+                    </div>
+                </div>
+                <!-- Engine 15 - GOOD -->
+                <div class="water-card good">
+                    <div class="water-card-header">
+                        <span class="water-card-unit">🚒 Engine 15</span>
+                        <span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">✅ HYDRANT</span>
+                    </div>
+                    <div class="water-gauge-mini">
+                        <div class="water-gauge-fill" style="width:80%;background:#2ecc71;"></div>
+                    </div>
+                    <div class="water-stats">
+                        <div><div class="water-stat-val" style="color:#2ecc71;">600 gal</div><div class="water-stat-lbl">Remaining</div></div>
+                        <div><div class="water-stat-val" style="color:#00d4ff;">150 GPM</div><div class="water-stat-lbl">Flow</div></div>
+                        <div><div class="water-timer-mini" style="color:#2ecc71;">∞</div><div class="water-stat-lbl">Unlimited</div></div>
+                    </div>
+                    <div style="margin-top:10px;font-size:0.75rem;color:#2ecc71;text-align:center;">
+                        🚿 HYD-0447 — 1,200 GPM available
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== HYDRANT MANAGEMENT ==================== -->
+        <div id="page-hydrants" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">🚿 Hydrant Management</h2>
+
+            <div class="grid grid-2" style="margin-bottom:16px;">
+                <!-- Upload -->
+                <div class="card">
+                    <div class="card-header"><h3>📤 Upload Hydrant Database</h3></div>
+                    <div class="card-body">
+                        <div class="upload-zone" onclick="document.getElementById('hydrantFile').click();">
+                            <div class="upload-icon">📍</div>
+                            <div class="upload-text">Click to upload hydrant data file</div>
+                            <div class="upload-formats">Supported: CSV, GeoJSON, KML — Max 50MB</div>
+                            <input type="file" id="hydrantFile" style="display:none;" accept=".csv,.geojson,.json,.kml">
+                        </div>
+                        <div style="margin-top:14px;">
+                            <div style="font-size:0.8rem;font-weight:700;color:#e2e8f0;margin-bottom:8px;">Required CSV Columns:</div>
+                            <div style="font-size:0.75rem;color:#a0aec0;font-family:monospace;background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;">
+                                ID, Lat, Lng, Address, FlowGPM, StaticPSI, ResidualPSI, Status
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="card">
+                    <div class="card-header"><h3>📊 Database Stats</h3></div>
+                    <div class="card-body">
+                        <div class="grid grid-2" style="gap:12px;">
+                            <div style="text-align:center;padding:16px;background:rgba(255,255,255,0.03);border-radius:10px;">
+                                <div style="font-size:2rem;font-weight:900;color:#00d4ff;">1,247</div>
+                                <div style="font-size:0.75rem;color:#a0aec0;">Total Hydrants</div>
+                            </div>
+                            <div style="text-align:center;padding:16px;background:rgba(255,255,255,0.03);border-radius:10px;">
+                                <div style="font-size:2rem;font-weight:900;color:#2ecc71;">1,198</div>
+                                <div style="font-size:0.75rem;color:#a0aec0;">In Service</div>
+                            </div>
+                            <div style="text-align:center;padding:16px;background:rgba(255,255,255,0.03);border-radius:10px;">
+                                <div style="font-size:2rem;font-weight:900;color:#e74c3c;">32</div>
+                                <div style="font-size:0.75rem;color:#a0aec0;">Out of Service</div>
+                            </div>
+                            <div style="text-align:center;padding:16px;background:rgba(255,255,255,0.03);border-radius:10px;">
+                                <div style="font-size:2rem;font-weight:900;color:#f39c12;">17</div>
+                                <div style="font-size:0.75rem;color:#a0aec0;">Maintenance</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:14px;">
+                            <div style="font-size:0.8rem;font-weight:700;color:#e2e8f0;margin-bottom:8px;">By Flow Class (NFPA 291):</div>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                <span class="tag" style="background:rgba(41,128,185,0.15);color:#2980b9;">🔵 AA: 312 (1,500+ GPM)</span>
+                                <span class="tag" style="background:rgba(39,174,96,0.15);color:#27ae60;">🟢 A: 498 (1,000–1,499)</span>
+                                <span class="tag" style="background:rgba(230,126,34,0.15);color:#e67e22;">🟠 B: 341 (500–999)</span>
+                                <span class="tag" style="background:rgba(231,76,60,0.15);color:#e74c3c;">🔴 C: 96 (<500)</span>
+                            </div>
+                        </div>
+                        <div style="margin-top:14px;font-size:0.75rem;color:#a0aec0;">
+                            Last updated: June 15, 2025 • Source: City Water Department
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Manual Entry -->
+            <div class="card">
+                <div class="card-header"><h3>➕ Add Hydrant Manually</h3></div>
+                <div class="card-body">
+                    <div class="assign-form">
+                        <div><label>Hydrant ID</label><input type="text" placeholder="e.g., HYD-1248"></div>
+                        <div><label>Latitude</label><input type="text" placeholder="e.g., 40.7128"></div>
+                        <div><label>Longitude</label><input type="text" placeholder="e.g., -74.0060"></div>
+                        <div><label>Address / Cross Streets</label><input type="text" placeholder="e.g., Main St & Oak Ave"></div>
+                        <div><label>Flow Capacity (GPM)</label><input type="number" placeholder="e.g., 1200"></div>
+                        <div><label>Static Pressure (PSI)</label><input type="number" placeholder="e.g., 65"></div>
+                        <div><label>Residual Pressure (PSI)</label><input type="number" placeholder="e.g., 45"></div>
+                        <div>
+                            <label>Status</label>
+                            <select><option>In Service</option><option>Out of Service</option><option>Maintenance</option></select>
+                        </div>
+                        <div>
+                            <label>Last Flow Test</label>
+                            <input type="date">
+                        </div>
+                    </div>
+                    <button class="send-order-btn" style="margin-top:16px;">💾 Save Hydrant</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PAR — ALL UNITS ==================== -->
+        <div id="page-par" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">👥 PAR Status — All Units</h2>
+
+            <div style="background:rgba(46,204,113,0.08);border:2px solid rgba(46,204,113,0.3);border-radius:14px;padding:16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#2ecc71;">✅ ALL PERSONNEL ACCOUNTED — 22/22</div>
+                    <div style="font-size:0.8rem;color:#a0aec0;margin-top:4px;">Last PAR: 14:28:00 — All units responded</div>
+                </div>
+                <button class="send-order-btn" onclick="alert('PAR request sent to all units')">📡 Request PAR — All Units</button>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>Unit</th><th>Crew</th><th>Status</th><th>Last PAR</th><th>Response</th><th>Location</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight:700;">🚒 Engine 7</td>
+                                <td>4</td>
+                                <td><span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">4/4 ✅</span></td>
+                                <td>14:28:00</td>
+                                <td>12 sec</td>
+                                <td>Interior — A-side 1st floor</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:700;">🚒 Engine 12</td>
+                                <td>4</td>
+                                <td><span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">4/4 ✅</span></td>
+                                <td>14:28:00</td>
+                                <td>8 sec</td>
+                                <td>A-side — Pump panel</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:700;">🪜 Ladder 3</td>
+                                <td>6</td>
+                                <td><span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">6/6 ✅</span></td>
+                                <td>14:28:00</td>
+                                <td>18 sec</td>
+                                <td>Roof + B-side 2nd floor</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:700;">🚒 Engine 15</td>
+                                <td>4</td>
+                                <td><span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">4/4 ✅</span></td>
+                                <td>14:28:00</td>
+                                <td>6 sec</td>
+                                <td>B-side — Exposure line</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:700;">🚑 Rescue 1</td>
+                                <td>2</td>
+                                <td><span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">2/2 ✅</span></td>
+                                <td>14:28:00</td>
+                                <td>4 sec</td>
+                                <td>A-side — RIT standby</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:700;">⭐ BC-2</td>
+                                <td>2</td>
+                                <td><span class="tag" style="background:rgba(46,204,113,0.15);color:#2ecc71;">2/2 ✅</span></td>
+                                <td>14:28:00</td>
+                                <td>2 sec</td>
+                                <td>A/D corner — Command Post</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== COMMS LOG ==================== -->
+        <div id="page-commslog" class="page">
+            <h2 style="color:#e2e8f0;margin-bottom:20px;">📡 Communications Log</h2>
+            <div class="card">
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item"><div class="timeline-time">14:32:00</div><div class="timeline-content"><strong style="color:#f1c40f;">CMD → E7:</strong> Prepare to advance 2nd floor. L3 checking extension.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:30:15</div><div class="timeline-content"><strong style="color:#e74c3c;">E7 → CMD:</strong> Fire knocked 1st floor A-side. Checking for extension.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:28:12</div><div class="timeline-content"><strong style="color:#e74c3c;">E7 → CMD:</strong> Engine 7 PAR — 4 accounted.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:28:10</div><div class="timeline-content"><strong style="color:#e74c3c;">E12 → CMD:</strong> Engine 12 PAR — 4 accounted.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:28:18</div><div class="timeline-content"><strong style="color:#3498db;">L3 → CMD:</strong> Ladder 3 PAR — 6 accounted.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:28:06</div><div class="timeline-content"><strong style="color:#e74c3c;">E15 → CMD:</strong> Engine 15 PAR — 4 accounted.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:28:04</div><div class="timeline-content"><strong style="color:#2ecc71;">R1 → CMD:</strong> Rescue 1 PAR — 2 accounted.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:28:00</div><div class="timeline-content"><strong style="color:#f1c40f;">CMD → ALL:</strong> PAR CHECK — All units report accountability.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:26:35</div><div class="timeline-content"><strong style="color:#e74c3c;">E7 → CMD:</strong> Acknowledges. Deploying attack line A-side 1st floor.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:26:30</div><div class="timeline-content"><strong style="color:#f1c40f;">CMD → E7:</strong> Deploy 1¾" attack A-side 1st floor. Backup 2½" standby.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:25:30</div><div class="timeline-content"><strong style="color:#e74c3c;">E12 → CMD:</strong> Water supply established. HYD-0449, positive source.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:25:00</div><div class="timeline-content"><strong style="color:#3498db;">L3 → CMD:</strong> Ladder 3 on scene. Positioning aerial C-side.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:24:00</div><div class="timeline-content"><strong style="color:#e74c3c;">E7 → CMD:</strong> Engine 7 on scene A-side. Heavy smoke, fire visible 1st floor A/B corner. Assuming command.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:22:00</div><div class="timeline-content"><strong style="color:#f1c40f;">CMD:</strong> 2nd alarm requested — heavy fire conditions reported by neighbors.</div></div>
+                        <div class="timeline-item"><div class="timeline-time">14:18:00</div><div class="timeline-content"><strong style="color:#a0aec0;">DISPATCH:</strong> Box 47-12, 742 Oakwood Drive. Structure fire. 1st alarm assignment.</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+    </div><!-- /app-layout -->
+
+    <script>
+        // Clock
+        function updateClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', {hour12:false});
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        // Page navigation
+        function showPage(pageId, btn) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn:not(.link-btn)').forEach(n => n.classList.remove('active'));
+            var page = document.getElementById('page-' + pageId);
+            if (page) page.classList.add('active');
+            if (btn) {
+                var target = btn.closest ? btn.closest('.nav-btn') : btn;
+                if (target) target.classList.add('active');
+            }
+        }
+
+        // Attach click listeners to nav buttons
+        document.querySelectorAll('.nav-btn[data-page]').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage(this.getAttribute('data-page'), this);
+            });
+        });
+
+        // Call timer
+        let callSeconds = 18 * 60 + 42;
+        function updateCallTimer() {
+            callSeconds++;
+            const m = Math.floor(callSeconds / 60);
+            const s = callSeconds % 60;
+            const h = Math.floor(m / 60);
+            document.getElementById('callTimer').textContent = 
+                String(h).padStart(2,'0') + ':' + String(m % 60).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        }
+        setInterval(updateCallTimer, 1000);
+
+        // Assignment builder
+        function updateAssignFields() {
+            const type = document.getElementById('assignType').value;
+            const hoseShow = (type === 'hose') ? 'block' : 'none';
+            const ladderShow = (type === 'ladder') ? 'block' : 'none';
+            document.getElementById('hoseFields').style.display = hoseShow;
+            document.getElementById('hoseFields2').style.display = hoseShow;
+            document.getElementById('hoseFields3').style.display = hoseShow;
+            document.getElementById('ladderFields').style.display = ladderShow;
+            document.getElementById('ladderFields2').style.display = ladderShow;
+            document.getElementById('ladderFields3').style.display = ladderShow;
+        }
+
+        function updatePreview() {
+            const unit = document.getElementById('assignUnit').value;
+            const type = document.getElementById('assignType').value;
+            const side = document.getElementById('assignSide').value;
+            let text = unit.toUpperCase() + ': ';
+
+            if (type === 'hose') {
+                const diam = document.getElementById('assignDiam').value;
+                const floor = document.getElementById('assignFloor').value;
+                const gpm = document.getElementById('assignGPM').value;
+                text += 'Deploy ' + diam + ' attack line to ' + side + '-side, ' + floor + ' — ' + gpm + ' GPM';
+            } else if (type === 'ladder') {
+                const ladder = document.getElementById('assignLadder').value;
+                const purpose = document.getElementById('assignLadderPurpose').value;
+                const placement = document.getElementById('assignLadderPlacement').value || side + '-side';
+                text += 'Raise ' + ladder + ' to ' + placement + ' for ' + purpose;
+            } else if (type === 'search') {
+                text += 'Conduct primary search — ' + side + '-side';
+            } else if (type === 'vent') {
+                text += 'Perform ventilation — ' + side;
+            } else if (type === 'rit') {
+                text += 'RIT standby — ' + side + '-side, tools ready, SCBA on air';
+            } else if (type === 'exposure') {
+                text += 'Protect exposure — ' + side + '-side';
+            } else if (type === 'water') {
+                text += 'Secure water supply — nearest hydrant';
+            } else if (type === 'salvage') {
+                text += 'Salvage and overhaul — ' + side + '-side';
+            } else if (type === 'rehab') {
+                text += 'Report to rehab sector';
+            } else if (type === 'staging') {
+                text += 'Stage and await assignment';
+            }
+
+            document.getElementById('orderPreview').textContent = text;
+        }
+
+        function sendOrder() {
+            const text = document.getElementById('orderPreview').textContent;
+            alert('📡 Order Sent!\n\n' + text + '\n\nAwaiting acknowledgment...');
+        }
+    </script>
+</body>
+</html>

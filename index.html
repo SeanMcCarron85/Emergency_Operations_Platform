@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmergencyOS — Main Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .hub-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 20px; background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0f1923 100%); }
+        .hub-logo { text-align: center; margin-bottom: 40px; }
+        .hub-logo h1 { font-size: 3rem; font-weight: 900; color: #e2e8f0; letter-spacing: -1px; }
+        .hub-logo .subtitle { font-size: 1rem; color: #a0aec0; margin-top: 8px; }
+        .hub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; max-width: 900px; width: 100%; }
+        .hub-card { background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 36px; text-align: center; cursor: pointer; transition: all 0.3s ease; text-decoration: none; position: relative; overflow: hidden; }
+        .hub-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+        .hub-card .card-icon { font-size: 3.5rem; margin-bottom: 16px; }
+        .hub-card .card-title { font-size: 1.4rem; font-weight: 800; color: #e2e8f0; margin-bottom: 8px; }
+        .hub-card .card-desc { font-size: 0.85rem; color: #a0aec0; line-height: 1.5; }
+        .hub-card .card-badge { position: absolute; top: 16px; right: 16px; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
+
+        .hub-card.fire { border-color: rgba(231,76,60,0.3); }
+        .hub-card.fire:hover { border-color: #e74c3c; background: rgba(231,76,60,0.08); box-shadow: 0 12px 40px rgba(231,76,60,0.15); }
+        .hub-card.fire .card-badge { background: rgba(231,76,60,0.2); color: #e74c3c; }
+
+        .hub-card.command { border-color: rgba(241,196,15,0.3); }
+        .hub-card.command:hover { border-color: #f1c40f; background: rgba(241,196,15,0.08); box-shadow: 0 12px 40px rgba(241,196,15,0.15); }
+        .hub-card.command .card-badge { background: rgba(241,196,15,0.2); color: #f1c40f; }
+
+        .hub-card.ems { border-color: rgba(0,212,255,0.3); }
+        .hub-card.ems:hover { border-color: #00d4ff; background: rgba(0,212,255,0.08); box-shadow: 0 12px 40px rgba(0,212,255,0.15); }
+        .hub-card.ems .card-badge { background: rgba(0,212,255,0.2); color: #00d4ff; }
+
+        .hub-card.er { border-color: rgba(155,89,182,0.3); }
+        .hub-card.er:hover { border-color: #9b59b6; background: rgba(155,89,182,0.08); box-shadow: 0 12px 40px rgba(155,89,182,0.15); }
+        .hub-card.er .card-badge { background: rgba(155,89,182,0.2); color: #9b59b6; }
+
+        .hub-features { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+        .hub-feature { padding: 3px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 600; background: rgba(255,255,255,0.05); color: #718096; }
+
+        .hub-footer { margin-top: 40px; text-align: center; color: #4a5568; font-size: 0.8rem; }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <div class="hub-container">
+        <div class="hub-logo">
+            <h1>🚨 EmergencyOS</h1>
+            <div class="subtitle">Unified Emergency Response Platform — Fire • EMS • Hospital • Command</div>
+        </div>
+
+        <div class="hub-grid">
+            <!-- Fire Operations -->
+            <a href="fire.html" class="hub-card fire">
+                <div class="card-badge">CREW VIEW</div>
+                <div class="card-icon">🔥</div>
+                <div class="card-title">Fire Operations</div>
+                <div class="card-desc">Truck-level interface for fire crews. Equipment, water load, PAR, hose line management, and water supply tracking.</div>
+                <div class="hub-features">
+                    <span class="hub-feature">Equipment</span>
+                    <span class="hub-feature">Water Tank</span>
+                    <span class="hub-feature">PAR / Crew</span>
+                    <span class="hub-feature">Hose Lines</span>
+                    <span class="hub-feature">PDP Calculator</span>
+                    <span class="hub-feature">Hydrant Map</span>
+                </div>
+            </a>
+
+            <!-- Incident Command -->
+            <a href="command.html" class="hub-card command">
+                <div class="card-badge">IC VIEW</div>
+                <div class="card-icon">⭐</div>
+                <div class="card-title">Incident Command</div>
+                <div class="card-desc">Strategic overview for IC. Tactical assignments, pump operations, water supply monitoring across all units, and hydrant management.</div>
+                <div class="hub-features">
+                    <span class="hub-feature">Tactical Assignments</span>
+                    <span class="hub-feature">Sector Map</span>
+                    <span class="hub-feature">Pump Ops</span>
+                    <span class="hub-feature">Water Monitor</span>
+                    <span class="hub-feature">PAR All Units</span>
+                    <span class="hub-feature">Hydrant DB</span>
+                </div>
+            </a>
+
+            <!-- EMS Operations -->
+            <a href="ems.html" class="hub-card ems">
+                <div class="card-badge">EMS VIEW</div>
+                <div class="card-icon">🚑</div>
+                <div class="card-title">EMS Operations</div>
+                <div class="card-desc">Complete ePCR with BLS/ALS assessments, Zoll monitor integration, hospital handoff via FHIR, and 12-lead transmission.</div>
+                <div class="hub-features">
+                    <span class="hub-feature">ePCR</span>
+                    <span class="hub-feature">BLS/ALS</span>
+                    <span class="hub-feature">Zoll Monitor</span>
+                    <span class="hub-feature">Hospital Handoff</span>
+                    <span class="hub-feature">12-Lead TX</span>
+                    <span class="hub-feature">EMR Integration</span>
+                </div>
+            </a>
+
+            <!-- ER Dashboard -->
+            <a href="er-dashboard.html" class="hub-card er">
+                <div class="card-badge">HOSPITAL VIEW</div>
+                <div class="card-icon">🏥</div>
+                <div class="card-title">ER Receiving Dashboard</div>
+                <div class="card-desc">Hospital-side view for ER staff. Inbound EMS patients, 12-lead ECG viewer, FHIR data integration, and care transfer acceptance.</div>
+                <div class="hub-features">
+                    <span class="hub-feature">Inbound Patients</span>
+                    <span class="hub-feature">12-Lead Viewer</span>
+                    <span class="hub-feature">FHIR Data</span>
+                    <span class="hub-feature">Care Transfer</span>
+                    <span class="hub-feature">Epic/Athena</span>
+                </div>
+            </a>
+        </div>
+
+        <div class="hub-footer">
+            EmergencyOS v2.0 — Fire • EMS • Hospital • Command — Unified Emergency Response
+        </div>
+    </div>
+</body>
+</html>
