@@ -77,6 +77,9 @@ Provide structured data for future automated reporting
                    │  ORM / Query Layer            │
                    └──────────────────────────────┘
 
+<img width="2816" height="1536" alt="architecture" src="https://github.com/user-attachments/assets/c81ad87f-8990-4b5f-b6b4-38bb382caca1" />
+
+
 # Agentic AI Potential
 This project is built with future automation in mind. Planned enhancements include:
 
